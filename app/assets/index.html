@@ -6,202 +6,187 @@
 <title>شاشة التلفزيون الرئيسية</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Reem+Kufi:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* Layout idea: a fixed 1920x1080 TV stage, scaled to fit any screen.
-     Clock and next prayer on the right, matches on the left, prayer strip and apps along the bottom,
-     all sitting on a slowly drifting landscape that changes every few minutes. */
+  /* Layout idea: a fixed 1920x1080 TV stage scaled to fit. No boxes: white type in three strengths
+     sits directly on a slow, soft background. Clock and prayers on the right, weather and matches
+     on the left, a single dock of app tiles along the bottom. */
   color-scheme: dark;
-  --ink: #f7f2e8;
-  --ink-dim: rgba(247, 242, 232, .68);
-  --glass: rgba(9, 13, 26, .50);
-  --glass-line: rgba(247, 242, 232, .14);
-  --sun: #f6b756;
-  --live: #ff7a66;
-  --night: #05070f;
-  --font-display: "Reem Kufi", "Noto Kufi Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-body: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --ink: #ffffff;
+  --ink-2: rgba(255, 255, 255, .62);
+  --ink-3: rgba(255, 255, 255, .36);
+  --hairline: rgba(255, 255, 255, .16);
+  --tile: rgba(255, 255, 255, .13);
+  --base: #07090f;
+  --live: #ff453a;
+  --font: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
 body {
-  background: var(--night);
-  color: var(--ink);
-  font-family: var(--font-body);
+  background: var(--base); color: var(--ink); font-family: var(--font); font-weight: 400;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 14px; padding: 16px; overflow: hidden;
 }
 html.tv body { padding: 0; gap: 0; }
 
-.frame { position: relative; overflow: hidden; border-radius: 10px; direction: ltr; flex: none; }
+.frame { position: relative; overflow: hidden; border-radius: 12px; direction: ltr; flex: none; }
 html.tv .frame { border-radius: 0; }
 .stage {
   position: absolute; top: 0; left: 0; width: 1920px; height: 1080px;
-  transform-origin: 0 0; direction: rtl; overflow: hidden; background: var(--night);
+  transform-origin: 0 0; direction: rtl; overflow: hidden; background: var(--base);
+  text-shadow: 0 1px 18px rgba(0, 0, 0, .38);
 }
 
-/* ---------- scenery ---------- */
-.scenery { position: absolute; inset: 0; animation: drift 80s ease-in-out infinite alternate; will-change: transform; }
-.scenery canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 2.8s ease; }
-.scenery canvas.on { opacity: 1; }
+/* ---------- background: soft colour fields, with photographs over them when available ---------- */
+.fields { position: absolute; inset: -20%; }
+.fields i { position: absolute; border-radius: 50%; will-change: transform; }
+.fields i:nth-child(1) { width: 62%; height: 78%; left: 2%; top: 4%; background: radial-gradient(closest-side, rgba(56, 88, 190, .62), rgba(56, 88, 190, 0)); animation: floatA 46s ease-in-out infinite alternate; }
+.fields i:nth-child(2) { width: 58%; height: 74%; right: 0; top: 18%; background: radial-gradient(closest-side, rgba(28, 132, 150, .50), rgba(28, 132, 150, 0)); animation: floatB 58s ease-in-out infinite alternate; }
+.fields i:nth-child(3) { width: 54%; height: 70%; left: 26%; bottom: 0; background: radial-gradient(closest-side, rgba(112, 66, 170, .46), rgba(112, 66, 170, 0)); animation: floatC 52s ease-in-out infinite alternate; }
+@keyframes floatA { to { transform: translate(14%, 10%) scale(1.15); } }
+@keyframes floatB { to { transform: translate(-16%, -8%) scale(1.1); } }
+@keyframes floatC { to { transform: translate(8%, -14%) scale(1.2); } }
+
+.photos { position: absolute; inset: 0; animation: drift 70s ease-in-out infinite alternate; will-change: transform; }
+.photos img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 3.2s ease; }
+.photos img.on { opacity: 1; }
 @keyframes drift {
-  from { transform: scale(1.03) translate(0.6%, 0.4%); }
-  to   { transform: scale(1.11) translate(-1.6%, -1.1%); }
+  from { transform: scale(1.04) translate(0.8%, 0.5%); }
+  to   { transform: scale(1.12) translate(-1.4%, -1%); }
 }
 .shade {
   position: absolute; inset: 0; pointer-events: none;
   background:
-    linear-gradient(to bottom, rgba(5, 8, 18, .62) 0, rgba(5, 8, 18, 0) 30%),
-    linear-gradient(to top, rgba(5, 8, 18, .86) 0, rgba(5, 8, 18, .42) 30%, rgba(5, 8, 18, 0) 56%),
-    rgba(5, 8, 18, .14);
+    linear-gradient(to left, rgba(4, 6, 12, .58) 0, rgba(4, 6, 12, 0) 42%),
+    linear-gradient(to right, rgba(4, 6, 12, .50) 0, rgba(4, 6, 12, 0) 40%),
+    linear-gradient(to top, rgba(4, 6, 12, .74) 0, rgba(4, 6, 12, 0) 34%),
+    rgba(4, 6, 12, .20);
 }
+.stage.plain .shade { background: linear-gradient(to top, rgba(4, 6, 12, .45) 0, rgba(4, 6, 12, 0) 34%); }
 
-/* ---------- top bar ---------- */
-.top { position: absolute; top: 60px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: flex-start; }
-.date .day { font-family: var(--font-display); font-weight: 700; font-size: 52px; line-height: 1.15; }
-.date .full { font-size: 30px; color: var(--ink-dim); margin-top: 4px; }
-.weather { display: flex; align-items: center; gap: 22px; direction: rtl; }
-.weather svg { width: 84px; height: 84px; flex: none; }
-.weather .temp { font-family: var(--font-display); font-weight: 700; font-size: 72px; line-height: 1; }
-.weather .cond { font-size: 30px; }
-.weather .sub { font-size: 24px; color: var(--ink-dim); margin-top: 4px; }
+/* ---------- right column: date, clock, prayers ---------- */
+.now { position: absolute; top: 88px; right: 112px; width: 560px; }
+.date { font-size: 34px; font-weight: 300; color: var(--ink-2); }
+.clock { display: flex; align-items: baseline; gap: 20px; direction: ltr; justify-content: flex-end; margin-top: 2px; }
+.clock .time { font-weight: 200; font-size: 236px; line-height: 1.08; font-variant-numeric: tabular-nums; letter-spacing: -3px; }
+.clock .ampm { font-weight: 300; font-size: 54px; color: var(--ink-2); }
+.next { font-size: 30px; font-weight: 400; margin-top: 10px; }
+.next span { color: var(--ink-2); font-weight: 300; }
+.prayers { margin-top: 26px; width: 300px; border-top: 1px solid var(--hairline); padding-top: 16px; display: grid; gap: 9px; }
+.prayer { display: flex; justify-content: space-between; align-items: baseline; font-size: 25px; font-weight: 300; color: var(--ink-2); }
+.prayer .at { font-variant-numeric: tabular-nums; }
+.prayer.past { color: var(--ink-3); }
+.prayer.upnext { color: var(--ink); font-weight: 500; }
 
-/* ---------- clock ---------- */
-.clock { position: absolute; top: 196px; right: 80px; display: flex; align-items: baseline; gap: 26px; direction: ltr; text-shadow: 0 6px 40px rgba(0, 0, 0, .45); }
-.clock .time { font-family: var(--font-display); font-weight: 700; font-size: 290px; line-height: 1; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
-.clock .colon { animation: blink 2s steps(1) infinite; }
-.clock .ampm { font-family: var(--font-display); font-weight: 500; font-size: 78px; color: var(--ink-dim); }
-@keyframes blink { 50% { opacity: .35; } }
-
-.next {
-  position: absolute; top: 528px; right: 80px; display: flex; align-items: center; gap: 18px;
-  background: var(--glass); border: 1px solid var(--glass-line); border-radius: 999px; padding: 16px 34px 16px 30px;
-  font-size: 34px;
-}
-.next .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--sun); flex: none; }
-.next b { font-family: var(--font-display); font-weight: 700; color: var(--sun); }
-.next.now { background: var(--sun); color: #1b1305; border-color: transparent; }
-.next.now b { color: #1b1305; }
-.next.now .dot { background: #1b1305; }
-
-/* ---------- matches ---------- */
-.matches { position: absolute; top: 236px; left: 80px; width: 660px; background: var(--glass); border: 1px solid var(--glass-line); border-radius: 26px; padding: 26px 30px 14px; }
-.matches h2 { font-family: var(--font-display); font-weight: 700; font-size: 34px; display: flex; justify-content: space-between; align-items: center; }
-.tag { font-family: var(--font-body); font-weight: 500; font-size: 20px; color: var(--ink-dim); border: 1px solid var(--glass-line); border-radius: 999px; padding: 4px 14px; }
-.match { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 16px 0; border-top: 1px solid var(--glass-line); }
-.match:first-of-type { margin-top: 16px; }
-.match .teams { font-size: 30px; line-height: 1.3; }
-.match .teams b { font-weight: 600; color: var(--sun); }
-.match .comp { font-size: 22px; color: var(--ink-dim); margin-top: 2px; }
+/* ---------- left column: weather, matches ---------- */
+.side { position: absolute; top: 100px; left: 112px; width: 600px; }
+.weather { display: flex; align-items: center; gap: 22px; }
+.weather svg { width: 64px; height: 64px; flex: none; }
+.weather .temp { font-weight: 200; font-size: 76px; line-height: 1; }
+.weather .cond { font-size: 28px; font-weight: 400; }
+.weather .sub { font-size: 22px; font-weight: 300; color: var(--ink-2); margin-top: 2px; }
+.label { font-size: 21px; font-weight: 400; color: var(--ink-3); display: flex; gap: 14px; align-items: center; }
+.matches { margin-top: 64px; }
+.match { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 15px 0; border-top: 1px solid var(--hairline); }
+.match:first-of-type { margin-top: 14px; }
+.match .teams { font-size: 27px; font-weight: 400; line-height: 1.35; }
+.match .teams .mine { font-weight: 500; }
+.match .teams .other { color: var(--ink-2); font-weight: 300; }
+.match .comp { font-size: 20px; font-weight: 300; color: var(--ink-3); margin-top: 1px; }
 .match .when { text-align: left; flex: none; font-variant-numeric: tabular-nums; }
-.match .when .d { font-size: 22px; color: var(--ink-dim); }
-.match .when .t { font-size: 30px; font-weight: 500; }
-.match .when .livepill { background: var(--live); color: #230703; font-weight: 600; font-size: 22px; border-radius: 999px; padding: 2px 14px; display: inline-block; }
-.empty { font-size: 26px; color: var(--ink-dim); padding: 22px 0 14px; }
+.match .when .d { font-size: 20px; font-weight: 300; color: var(--ink-3); }
+.match .when .t { font-size: 25px; font-weight: 300; color: var(--ink-2); }
+.match .when .live { color: var(--live); font-size: 22px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.match .when .live::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--live); }
+.empty { font-size: 24px; font-weight: 300; color: var(--ink-2); padding: 18px 0; border-top: 1px solid var(--hairline); margin-top: 14px; }
+.note { font-size: 18px; font-weight: 300; color: var(--ink-3); }
 
-/* ---------- prayer strip ---------- */
-.prayers { position: absolute; bottom: 192px; left: 80px; right: 80px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
-.prayer { background: var(--glass); border: 1px solid var(--glass-line); border-radius: 22px; padding: 18px 26px; display: flex; justify-content: space-between; align-items: center; }
-.prayer .name { font-family: var(--font-display); font-weight: 500; font-size: 32px; }
-.prayer .at { font-size: 34px; font-weight: 500; font-variant-numeric: tabular-nums; direction: rtl; }
-.prayer.past { opacity: .52; }
-.prayer.upnext { background: var(--sun); color: #1b1305; border-color: transparent; }
-.prayer.upnext .name { font-weight: 700; }
-
-/* ---------- apps ---------- */
-.apps { position: absolute; bottom: 60px; left: 80px; right: 80px; display: flex; gap: 14px; }
+/* ---------- dock ---------- */
+.apps { position: absolute; bottom: 78px; left: 0; right: 0; display: flex; justify-content: center; gap: 18px; padding: 0 60px; }
 .app {
-  flex: 1; height: 100px; border-radius: 22px; background: var(--glass); border: 1px solid var(--glass-line);
-  color: var(--ink); font-family: var(--font-body); font-weight: 500; font-size: 28px; cursor: pointer;
-  transition: transform .18s ease, background .18s ease;
+  width: 142px; height: 80px; flex: none; border: 0; border-radius: 16px; overflow: hidden; cursor: pointer;
+  background: var(--tile); color: var(--ink); font-family: var(--font); font-size: 19px; font-weight: 400;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 0;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
 }
-.app:hover { background: rgba(247, 242, 232, .16); }
-.app:focus-visible { outline: 5px solid var(--sun); outline-offset: 3px; transform: scale(1.06); background: rgba(247, 242, 232, .20); }
-.app.all { color: var(--ink-dim); }
+.app img.banner { width: 100%; height: 100%; object-fit: cover; display: block; }
+.app img.icon { width: 46px; height: 46px; border-radius: 11px; }
+.app svg { width: 30px; height: 30px; }
+.app:hover { background: rgba(255, 255, 255, .22); }
+.app:focus-visible { outline: none; transform: scale(1.16); box-shadow: 0 0 0 3px rgba(255, 255, 255, .95), 0 22px 46px rgba(0, 0, 0, .55); z-index: 2; }
+.credit { position: absolute; bottom: 26px; left: 112px; font-size: 15px; font-weight: 300; color: var(--ink-3); direction: ltr; text-shadow: none; }
 
 .toast {
-  position: absolute; bottom: 300px; left: 50%; transform: translateX(-50%); background: rgba(9, 13, 26, .92);
-  border: 1px solid var(--glass-line); border-radius: 999px; padding: 16px 36px; font-size: 28px; opacity: 0; transition: opacity .3s; pointer-events: none;
+  position: absolute; bottom: 196px; left: 50%; transform: translateX(-50%); background: rgba(20, 22, 30, .9);
+  border-radius: 999px; padding: 14px 32px; font-size: 24px; font-weight: 300; opacity: 0; transition: opacity .3s; pointer-events: none; text-shadow: none;
 }
 .toast.show { opacity: 1; }
 
-/* ---------- preview helper (hidden on the TV) ---------- */
-.helper { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; max-width: 640px; text-align: center; }
-.helper p { font-size: 15px; line-height: 1.7; color: var(--ink-dim); flex: 1 1 100%; }
-.helper button {
-  font-family: var(--font-body); font-size: 15px; font-weight: 500; color: #1b1305; background: var(--sun);
-  border: 0; border-radius: 999px; padding: 10px 20px; cursor: pointer;
-}
-.helper button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.helper .scene-name { font-size: 15px; color: var(--ink); }
+/* ---------- preview note (hidden on the TV) ---------- */
+.helper { max-width: 620px; text-align: center; font-size: 14px; line-height: 1.8; color: var(--ink-2); font-weight: 300; }
 html.tv .helper, html.short .helper { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .scenery, .clock .colon { animation: none; }
-  .scenery canvas { transition: none; }
+  .photos, .fields i { animation: none; }
+  .photos img { transition: none; }
 }
 </style>
 </head>
 <body>
 
 <div class="frame" id="frame">
-  <div class="stage" id="stage">
-    <div class="scenery" aria-hidden="true">
-      <canvas id="bgA" width="1920" height="1080" class="on"></canvas>
-      <canvas id="bgB" width="1920" height="1080"></canvas>
-    </div>
+  <div class="stage plain" id="stage">
+    <div class="fields" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="photos" aria-hidden="true"><img id="phA" alt=""><img id="phB" alt=""></div>
     <div class="shade" aria-hidden="true"></div>
 
-    <div class="top">
-      <div class="date">
-        <div class="day" id="dayName"></div>
-        <div class="full" id="fullDate"></div>
+    <div class="now">
+      <div class="date" id="fullDate"></div>
+      <div class="clock">
+        <span class="ampm" id="ampm"></span>
+        <span class="time"><span id="hh"></span>:<span id="mm"></span></span>
       </div>
+      <div class="next" id="nextText"></div>
+      <div class="prayers" id="prayers" aria-label="أوقات الصلاة في الرياض"></div>
+    </div>
+
+    <div class="side">
       <div class="weather" id="weather"></div>
+      <section class="matches" aria-label="مباريات فرقي">
+        <div class="label">مباريات فرقي <span class="note" id="matchTag" hidden></span></div>
+        <div id="matchList"></div>
+      </section>
     </div>
-
-    <div class="clock" aria-live="off">
-      <span class="ampm" id="ampm"></span>
-      <span class="time"><span id="hh"></span><span class="colon">:</span><span id="mm"></span></span>
-    </div>
-
-    <div class="next" id="next"><span class="dot"></span><span id="nextText"></span></div>
-
-    <section class="matches" aria-label="المباريات القادمة">
-      <h2>المباريات القادمة <span class="tag" id="matchTag" hidden></span></h2>
-      <div id="matchList"></div>
-    </section>
-
-    <div class="prayers" id="prayers" aria-label="أوقات الصلاة في الرياض"></div>
 
     <nav class="apps" id="apps" aria-label="التطبيقات"></nav>
+    <div class="credit" id="credit"></div>
     <div class="toast" id="toast" role="status"></div>
   </div>
 </div>
 
-<div class="helper" id="helper">
-  <p>معاينة بمقاس شاشة التلفزيون. أدر الجوال أفقيًّا لتكبيرها. الخلفية تتبدّل تلقائيًّا كل عشر دقائق.</p>
-  <button type="button" id="nextScene">بدّل المنظر</button>
-  <span class="scene-name" id="sceneName"></span>
-</div>
+<p class="helper" id="helper">معاينة بمقاس شاشة التلفزيون. أدر الجوال أفقيًّا لتكبيرها. الصور الطبيعية وشعارات التطبيقات تظهر على التلفزيون فقط، وهنا تظهر خلفية لونية هادئة وأسماء التطبيقات.</p>
 
 <script>
 'use strict';
 
 /* ================= settings ================= */
 const CITY = { name: 'الرياض', lat: 24.7136, lng: 46.6753, tz: 3 };
-const SCENE_MINUTES = 10;
+const PHOTO_MINUTES = 5;
+/* Dock tiles, right to left: [name, what to open, glyph for tiles that have no app artwork] */
 const APPS = [
   ['نتفليكس', 'com.netflix.ninja'],
   ['يوتيوب', 'com.google.android.youtube.tv'],
+  ['ثمانية', 'com.thmanyah.shasha.tv'],
+  ['بي إن', 'hdmi:2', 'dish'],
+  ['بلايستيشن', 'hdmi:3', 'pad'],
   ['ديزني+', 'com.disney.disneyplus'],
   ['أو إس إن+', 'com.osn.go'],
-  ['ثمانية', 'com.thmanyah.shasha.tv'],
   ['آبل تي في', 'com.apple.atve.androidtv.appletv'],
   ['برايم فيديو', 'com.amazon.amazonvideo.livingroom'],
   ['إن بي إيه', 'com.nbaimd.gametime.nba2011'],
-  ['كل التطبيقات', 'all'],
+  ['كل التطبيقات', 'all', 'grid'],
 ];
 /* Teams followed: [league path on the scores feed, competition name, team-name test, days ahead to read] */
 const FOLLOW = [
@@ -209,15 +194,22 @@ const FOLLOW = [
   ['soccer/esp.1', 'الدوري الإسباني', /^(fc )?barcelona$/i, 14],
   ['basketball/nba', 'دوري السلة الأمريكي', /76ers/i, 7],
 ];
-/* Fixtures saved on 18 Nov 2026, shown only when the live feed cannot be reached. */
+/* Fixtures saved on 18 Nov 2026, used when the live feed gives nothing. */
 const SAVED_MATCHES = [
   { date: '2026-11-19T00:00:00Z', home: 'Orlando Magic', away: 'Philadelphia 76ers', comp: 'دوري السلة الأمريكي' },
   { date: '2026-11-21T18:00:00Z', home: 'Philadelphia 76ers', away: 'Milwaukee Bucks', comp: 'دوري السلة الأمريكي' },
   { date: '2026-11-22T13:00:00Z', home: 'Barcelona', away: 'Villarreal', comp: 'الدوري الإسباني' },
   { date: '2026-11-24T00:00:00Z', home: 'Philadelphia 76ers', away: 'Portland Trail Blazers', comp: 'دوري السلة الأمريكي' },
+  { date: '2026-11-25T22:00:00Z', home: 'Philadelphia 76ers', away: 'Miami Heat', comp: 'دوري السلة الأمريكي' },
   { date: '2026-11-29T15:15:00Z', home: 'Deportivo La Coruna', away: 'Barcelona', comp: 'الدوري الإسباني' },
+  { date: '2026-12-02T20:30:00Z', home: 'Barcelona', away: 'Atletico Madrid', comp: 'الدوري الإسباني' },
 ];
 const MY_TEAMS = /nassr|^(fc )?barcelona$|76ers/i;
+/* Photographs: featured landscape pictures on Wikimedia Commons. */
+const PHOTO_FEED = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*' +
+  '&generator=categorymembers&gcmtitle=' + encodeURIComponent('Category:Featured pictures of landscapes') +
+  '&gcmtype=file&gcmlimit=60&gcmsort=timestamp&gcmdir=desc' +
+  '&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=1920&iiextmetadatafilter=Artist%7CLicenseShortName';
 
 /* ================= small helpers ================= */
 const $ = id => document.getElementById(id);
@@ -325,7 +317,7 @@ function renderPrayers() {
   const today = prayerTimes(p.y, p.m, p.d);
   const salah = PRAYERS.filter(x => x[0] !== 'sunrise');
 
-  let next = salah.find(([k]) => today[k] > nowH);
+  const next = salah.find(([k]) => today[k] > nowH);
   let nextH, nextName;
   if (next) { nextH = today[next[0]]; nextName = next[1]; }
   else {
@@ -338,19 +330,16 @@ function renderPrayers() {
   $('prayers').innerHTML = PRAYERS.map(([k, name]) => {
     const c = clock12(today[k]);
     const cls = (next && next[0] === k) ? 'upnext' : (today[k] <= nowH ? 'past' : '');
-    return `<div class="prayer ${cls}"><span class="name">${name}</span><span class="at">${c.text} ${c.ampm}</span></div>`;
+    return `<div class="prayer ${cls}"><span>${name}</span><span class="at">${c.text} ${c.ampm}</span></div>`;
   }).join('');
 
-  const box = $('next');
   if (current) {
-    box.classList.add('now');
-    $('nextText').innerHTML = `حان الآن وقت صلاة <b>${current[1]}</b>`;
+    $('nextText').innerHTML = `حان الآن وقت صلاة ${current[1]}`;
   } else {
-    box.classList.remove('now');
     const mins = Math.max(1, Math.round((nextH - nowH) * 60));
     const h = Math.floor(mins / 60), m = mins % 60;
     const left = h ? `${ar(h)} س ${ar(pad(m))} د` : `${ar(m)} د`;
-    $('nextText').innerHTML = `الصلاة القادمة <b>${nextName}</b> بعد ${left}`;
+    $('nextText').innerHTML = `${nextName} <span>بعد ${left}</span>`;
   }
 }
 
@@ -360,8 +349,7 @@ function renderClock() {
   $('hh').textContent = ar((p.h % 12) || 12);
   $('mm').textContent = ar(pad(p.min));
   $('ampm').textContent = p.h < 12 ? 'ص' : 'م';
-  $('dayName').textContent = DAYS[p.dow];
-  $('fullDate').textContent = `${ar(p.d)} ${MONTHS[p.m - 1]} ${ar(p.y)}`;
+  $('fullDate').textContent = `${DAYS[p.dow]} ${ar(p.d)} ${MONTHS[p.m - 1]}`;
 }
 
 /* ================= weather ================= */
@@ -371,28 +359,28 @@ const WX = [
   [[71, 73, 75, 77, 85, 86], 'ثلج', 'cloud'], [[80, 81, 82], 'زخات مطر', 'rain'], [[95, 96, 99], 'عواصف رعدية', 'storm'],
 ];
 function wxIcon(kind, night) {
-  const s = 'fill="none" stroke="#f7f2e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"';
+  const s = 'fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"';
   const sun = night
-    ? '<path d="M52 20a22 22 0 1 0 14 38A26 26 0 0 1 52 20z" fill="#f6b756"/>'
-    : '<circle cx="42" cy="42" r="15" fill="#f6b756"/><g stroke="#f6b756" stroke-width="4" stroke-linecap="round"><path d="M42 12v8M42 64v8M12 42h8M64 42h8M21 21l6 6M57 57l6 6M21 63l6-6M57 27l6-6"/></g>';
-  const cloud = `<path d="M26 62h34a12 12 0 0 0 1-24 17 17 0 0 0-32-3 13.5 13.5 0 0 0-3 27z" ${s} fill="rgba(247,242,232,.18)"/>`;
-  const smallSun = night ? '<path d="M60 12a13 13 0 1 0 9 22 15 15 0 0 1-9-22z" fill="#f6b756"/>' : '<circle cx="60" cy="24" r="11" fill="#f6b756"/>';
+    ? `<path d="M40 14a19 19 0 1 0 12 32A22 22 0 0 1 40 14z" ${s}/>`
+    : `<circle cx="32" cy="32" r="11" ${s}/><path d="M32 8v6M32 50v6M8 32h6M50 32h6M15 15l4 4M45 45l4 4M15 49l4-4M45 19l4-4" ${s}/>`;
+  const cloud = `<path d="M20 48h26a9.5 9.5 0 0 0 1-19 13 13 0 0 0-25-2 10.5 10.5 0 0 0-2 21z" ${s}/>`;
+  const smallSun = night ? `<path d="M46 9a9 9 0 1 0 7 15 11 11 0 0 1-7-15z" ${s}/>` : `<circle cx="46" cy="17" r="7" ${s}/>`;
   const body = {
     clear: sun,
     partly: smallSun + cloud,
     cloud: cloud,
-    fog: cloud + `<path d="M20 72h44M28 80h28" ${s}/>`,
-    rain: cloud + `<path d="M32 70l-3 8M44 70l-3 8M56 70l-3 8" ${s}/>`,
-    storm: cloud + '<path d="M46 64l-8 10h8l-4 9" fill="none" stroke="#f6b756" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>',
+    fog: cloud + `<path d="M16 56h32" ${s}/>`,
+    rain: cloud + `<path d="M24 54l-2 5M33 54l-2 5M42 54l-2 5" ${s}/>`,
+    storm: cloud + `<path d="M35 50l-5 7h6l-3 6" ${s}/>`,
   }[kind] || cloud;
-  return `<svg viewBox="0 0 84 84" aria-hidden="true">${body}</svg>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${body}</svg>`;
 }
 function renderWeather(w, example) {
   const row = WX.find(r => r[0].includes(w.code)) || WX[0];
   $('weather').innerHTML =
     wxIcon(row[2], !w.day) +
-    `<div><div class="temp">${ar(Math.round(w.temp))}°</div></div>` +
-    `<div><div class="cond">${row[1]}${example ? ' <span class="tag">مثال</span>' : ''}</div>` +
+    `<div class="temp">${ar(Math.round(w.temp))}°</div>` +
+    `<div><div class="cond">${row[1]}${example ? ' <span class="note">مثال</span>' : ''}</div>` +
     `<div class="sub">${CITY.name} · العظمى ${ar(Math.round(w.hi))}° · الصغرى ${ar(Math.round(w.lo))}°</div></div>`;
 }
 async function loadWeather() {
@@ -401,7 +389,6 @@ async function loadWeather() {
       '&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FRiyadh&forecast_days=1';
     const j = await getJSON(url);
     renderWeather({ temp: j.current.temperature_2m, code: j.current.weather_code, day: j.current.is_day === 1, hi: j.daily.temperature_2m_max[0], lo: j.daily.temperature_2m_min[0] }, false);
-    tvLog('weather ok ' + j.current.temperature_2m);
   } catch (e) {
     tvLog('weather failed: ' + e.message);
     const h = cityParts(cityNow()).h;
@@ -431,76 +418,124 @@ const TEAM_AR = [
 const teamAr = n => (TEAM_AR.find(([re]) => re.test(n)) || [0, n])[1];
 const ymd = d => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
 
+function readEvents(j, comp, re, into) {
+  for (const ev of (j.events || [])) {
+    const c = ev.competitions && ev.competitions[0];
+    if (!c || !c.competitors) continue;
+    const home = c.competitors.find(t => t.homeAway === 'home'), away = c.competitors.find(t => t.homeAway === 'away');
+    if (!home || !away || !home.team || !away.team) continue;
+    const hn = home.team.displayName || home.team.name || '', an = away.team.displayName || away.team.name || '';
+    if (!re.test(hn) && !re.test(an)) continue;
+    const st = (c.status && c.status.type) || (ev.status && ev.status.type) || {};
+    const sc = s => (s && typeof s === 'object') ? (s.displayValue != null ? s.displayValue : s.value) : s;
+    into.push({ date: ev.date || c.date, home: hn, away: an, comp, state: st.state, hs: sc(home.score), as: sc(away.score) });
+  }
+}
 async function fetchLive() {
   const from = new Date(Date.now() - 86400e3);
   const all = [];
   const results = await Promise.allSettled(FOLLOW.map(async ([path, comp, re, days]) => {
     const to = new Date(Date.now() + days * 86400e3);
-    const base = `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`;
+    const base = `https://site.api.espn.com/apis/site/v2/sports/${path}`;
     const range = `dates=${ymd(from)}-${ymd(to)}`;
-    /* The feed is undocumented: try the widest request first, then simpler ones. */
-    let j = null, lastError = null;
-    for (const query of [`?${range}&limit=200`, `?${range}`, `?dates=${ymd(new Date())}`, '']) {
-      try { j = await getJSON(base + query); tvLog(`scores ${path} ok with "${query}": ${(j.events || []).length} events`); break; }
-      catch (e) { lastError = e; tvLog(`scores ${path} "${query}" failed: ${e.message}`); }
+    let got = 0, lastError = null;
+    /* The feed is undocumented: ask for the whole range, then simpler forms, and keep whatever answers. */
+    for (const query of [`/scoreboard?${range}&limit=200`, `/scoreboard?${range}`, '/scoreboard']) {
+      try {
+        const j = await getJSON(base + query);
+        const before = all.length;
+        readEvents(j, comp, re, all);
+        tvLog(`scores ${path}${query}: ${(j.events || []).length} events, ${all.length - before} mine`);
+        got++;
+        if (all.length > before) break;
+      } catch (e) { lastError = e; tvLog(`scores ${path}${query} failed: ${e.message}`); }
     }
-    if (!j) throw lastError;
-    for (const ev of (j.events || [])) {
-      const c = ev.competitions && ev.competitions[0];
-      if (!c || !c.competitors) continue;
-      const home = c.competitors.find(t => t.homeAway === 'home'), away = c.competitors.find(t => t.homeAway === 'away');
-      if (!home || !away) continue;
-      const hn = home.team.displayName || home.team.name, an = away.team.displayName || away.team.name;
-      if (!re.test(hn) && !re.test(an)) continue;
-      const st = (ev.status && ev.status.type) || {};
-      all.push({ date: ev.date, home: hn, away: an, comp, state: st.state, hs: home.score, as: away.score });
-    }
+    /* The team's own schedule, found through the league's team list. */
+    try {
+      const teams = await getJSON(base + '/teams?limit=100');
+      const list = (((teams.sports || [])[0] || {}).leagues || [])[0];
+      const hit = ((list && list.teams) || []).map(t => t.team).find(t => t && re.test(t.displayName || t.name || ''));
+      if (hit) {
+        for (const extra of ['?fixture=true', '']) {
+          const j = await getJSON(`${base}/teams/${hit.id}/schedule${extra}`);
+          const before = all.length;
+          readEvents(j, comp, re, all);
+          tvLog(`schedule ${path} team ${hit.id}${extra}: ${(j.events || []).length} events, ${all.length - before} mine`);
+          got++;
+        }
+      } else tvLog(`schedule ${path}: team not found in list`);
+    } catch (e) { lastError = e; tvLog(`schedule ${path} failed: ${e.message}`); }
+    if (!got) throw lastError || new Error('no answer');
   }));
-  results.forEach((r, i) => { if (r.status === 'rejected') tvLog(`scores ${FOLLOW[i][0]} failed: ${r.reason && r.reason.message}`); });
   if (results.every(r => r.status === 'rejected')) throw new Error('no scores feed reachable');
   return all;
 }
-function renderMatches(list, saved) {
-  const now = Date.now();
-  const rows = list
+function upcoming(list) {
+  const now = Date.now(), seen = new Set();
+  return list
     .map(m => ({ ...m, t: new Date(m.date).getTime() }))
-    .filter(m => m.state === 'in' || m.t > now - 3 * 3600e3)
-    .sort((a, b) => a.t - b.t)
-    .slice(0, 4);
+    .filter(m => !isNaN(m.t) && (m.state === 'in' || m.t > now - 3 * 3600e3))
+    .filter(m => { const k = Math.round(m.t / 3600e3) + teamAr(m.home) + teamAr(m.away); if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => a.t - b.t);
+}
+function renderMatches(list, saved) {
+  const rows = upcoming(list).slice(0, 4);
   const tag = $('matchTag');
   tag.hidden = !saved;
-  tag.textContent = saved ? 'جدول محفوظ ' + ar(18) + ' نوفمبر' : '';
-  if (!rows.length) { $('matchList').innerHTML = '<p class="empty">لا توجد مباريات لفرقك خلال الأسبوعين القادمين.</p>'; return; }
+  tag.textContent = saved ? 'جدول محفوظ' : '';
+  if (!rows.length) { $('matchList').innerHTML = '<p class="empty">لا توجد مباريات قريبة.</p>'; return; }
   const today = cityParts(cityNow());
   $('matchList').innerHTML = rows.map(m => {
     const local = new Date(m.t + CITY.tz * 3600e3), p = cityParts(local);
     const dayDiff = Math.round((Date.UTC(p.y, p.m - 1, p.d) - Date.UTC(today.y, today.m - 1, today.d)) / 86400e3);
     const dayText = dayDiff === 0 ? 'اليوم' : dayDiff === 1 ? 'غدًا' : dayDiff < 7 && dayDiff > 0 ? DAYS[p.dow] : `${DAYS[p.dow]} ${ar(p.d)} ${MONTHS[p.m - 1]}`;
     const c = clock12(p.h + p.min / 60);
-    const name = n => MY_TEAMS.test(n) ? `<b>${teamAr(n)}</b>` : teamAr(n);
+    const name = n => `<span class="${MY_TEAMS.test(n) ? 'mine' : 'other'}">${teamAr(n)}</span>`;
     const live = m.state === 'in';
-    const score = (live || m.state === 'post') && m.hs != null ? ` <span dir="ltr">${ar(m.hs)} - ${ar(m.as)}</span>` : '';
-    return `<div class="match"><div><div class="teams">${name(m.home)} × ${name(m.away)}${score}</div><div class="comp">${m.comp}</div></div>` +
-      `<div class="when">${live ? '<span class="livepill">جارية الآن</span>' : `<div class="d">${dayText}</div><div class="t">${c.text} ${c.ampm}</div>`}</div></div>`;
+    const score = (live || m.state === 'post') && m.hs != null && m.hs !== '' ? ` <span dir="ltr">${ar(m.hs)} - ${ar(m.as)}</span>` : '';
+    return `<div class="match"><div><div class="teams">${name(m.home)} <span class="other">×</span> ${name(m.away)}${score}</div><div class="comp">${m.comp}</div></div>` +
+      `<div class="when">${live ? '<span class="live">مباشر</span>' : `<div class="d">${dayText}</div><div class="t">${c.text} ${c.ampm}</div>`}</div></div>`;
   }).join('');
 }
 async function loadMatches() {
-  try { renderMatches(await fetchLive(), false); }
-  catch (e) { renderMatches(SAVED_MATCHES, true); }
+  let live = [];
+  try { live = await fetchLive(); } catch (e) { tvLog('matches: ' + e.message); }
+  /* If the feed answered but had none of these teams' games, fall back to the saved fixtures. */
+  if (upcoming(live).length) renderMatches(live, false);
+  else renderMatches(SAVED_MATCHES, true);
 }
 
-/* ================= apps ================= */
+/* ================= dock ================= */
+const GLYPHS = {
+  grid: '<svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#fff"><rect x="3" y="3" width="10" height="10" rx="3"/><rect x="17" y="3" width="10" height="10" rx="3"/><rect x="3" y="17" width="10" height="10" rx="3"/><rect x="17" y="17" width="10" height="10" rx="3"/></g></svg>',
+  pad: '<svg viewBox="0 0 30 30" aria-hidden="true"><path d="M9 9h12a6 6 0 0 1 6 6l1 5a3 3 0 0 1-5.4 1.9L20.5 19h-11l-2.1 2.9A3 3 0 0 1 2 20l1-5a6 6 0 0 1 6-6z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M9 12.5v4M7 14.5h4" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="13" r="1.3" fill="#fff"/><circle cx="23" cy="16" r="1.3" fill="#fff"/></svg>',
+  dish: '<svg viewBox="0 0 30 30" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a13 13 0 0 0 16 16z"/><path d="M14 16l5-5"/><circle cx="20.5" cy="9.5" r="1.6"/><path d="M19 3a8 8 0 0 1 8 8"/><path d="M10 22l-3 5h9"/></g></svg>',
+};
 function toast(text) {
   const t = $('toast'); t.textContent = text; t.classList.add('show');
   clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 function renderApps() {
   const nav = $('apps');
-  nav.innerHTML = APPS.map(([label, pkg], i) => `<button type="button" class="app${pkg === 'all' ? ' all' : ''}" id="app-${i}" data-pkg="${pkg}">${label}</button>`).join('');
+  const hasArt = window.TVBridge && window.TVBridge.artwork;
+  nav.innerHTML = APPS.map(([label, target, glyph], i) => {
+    let inner = '';
+    if (!glyph && hasArt) {
+      let art = '';
+      try { art = window.TVBridge.artwork(target) || ''; } catch (e) {}
+      const cut = art.indexOf('|');
+      if (cut > 0) {
+        const kind = art.slice(0, cut), src = art.slice(cut + 1);
+        inner = kind === 'banner' ? `<img class="banner" src="${src}" alt="">` : `<img class="icon" src="${src}" alt=""><span>${label}</span>`;
+      }
+    }
+    if (!inner) inner = (glyph ? GLYPHS[glyph] : '') + `<span>${label}</span>`;
+    return `<button type="button" class="app" id="app-${i}" data-target="${target}" aria-label="${label}">${inner}</button>`;
+  }).join('');
   nav.addEventListener('click', e => {
     const b = e.target.closest('.app'); if (!b) return;
-    if (window.TVBridge && window.TVBridge.launch) window.TVBridge.launch(b.dataset.pkg);
-    else toast('يفتح «' + b.textContent + '» عند تشغيل الشاشة على التلفزيون');
+    if (window.TVBridge && window.TVBridge.launch) window.TVBridge.launch(b.dataset.target);
+    else toast('يفتح «' + b.getAttribute('aria-label') + '» عند تشغيل الشاشة على التلفزيون');
   });
   /* Remote control: the row reads right to left, so the left arrow moves to the next tile. */
   document.addEventListener('keydown', e => {
@@ -513,196 +548,44 @@ function renderApps() {
   if (ON_TV) nav.querySelector('.app').focus();
 }
 
-/* ================= scenery ================= */
-const W = 1920, H = 1080;
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-function noise1(seed) {
-  const r = rng(seed), g = Array.from({ length: 512 }, r);
-  return x => { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return g[i & 511] + (g[(i + 1) & 511] - g[i & 511]) * u; };
-}
-function fbm(n, x, oct) { let s = 0, a = 0.5, f = 1, norm = 0; for (let i = 0; i < oct; i++) { s += a * n(x * f); norm += a; a *= 0.5; f *= 2; } return s / norm; }
-
-function sky(c, stops, toY) {
-  const g = c.createLinearGradient(0, 0, 0, toY);
-  stops.forEach(([p, col]) => g.addColorStop(p, col));
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-}
-function glow(c, x, y, r, col, core) {
-  const g = c.createRadialGradient(x, y, 0, x, y, r);
-  g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
-  c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
-  if (core) { c.fillStyle = core[1]; c.beginPath(); c.arc(x, y, core[0], 0, 7); c.fill(); }
-}
-function stars(c, seed, n, maxY) {
-  const r = rng(seed);
-  for (let i = 0; i < n; i++) {
-    const y = r() * maxY, a = (0.25 + r() * 0.75) * (1 - y / maxY * 0.7);
-    c.fillStyle = `rgba(255,255,255,${a.toFixed(2)})`;
-    c.beginPath(); c.arc(r() * W, y, 0.6 + r() * 1.5, 0, 7); c.fill();
-  }
-}
-/* One ridge line filled down to the bottom of the picture. Returns its outline points. */
-function ridge(c, o) {
-  const n = noise1(o.seed), pts = [];
-  let top = H;
-  for (let x = -20; x <= W + 20; x += 4) {
-    let v = fbm(n, x / o.scale + 7.3, o.oct || 4);
-    if (o.ridged) v = 1 - Math.abs(2 * v - 1);
-    const y = o.base - o.amp * v;
-    if (y < top) top = y;
-    pts.push([x, y]);
-  }
-  const path = () => { c.beginPath(); c.moveTo(-20, H); pts.forEach(p => c.lineTo(p[0], p[1])); c.lineTo(W + 20, H); c.closePath(); };
-  const g = c.createLinearGradient(0, top, 0, o.to || H);
-  g.addColorStop(0, o.fill[0]); g.addColorStop(1, o.fill[1]);
-  path(); c.fillStyle = g; c.fill();
-  if (o.trees) {
-    const r = rng(o.seed + 99);
-    c.fillStyle = o.fill[0];
-    for (let i = 0; i < pts.length; i += 2 + Math.floor(r() * 3)) {
-      const [x, y] = pts[i], h = o.trees * (0.55 + r() * 0.75), w = h * 0.26;
-      c.beginPath(); c.moveTo(x - w, y + 3); c.lineTo(x, y - h); c.lineTo(x + w, y + 3); c.closePath(); c.fill();
+/* ================= photographs ================= */
+let photos = [], photoIndex = -1, frontPhoto = 'phA';
+const plain = s => String(s || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+async function loadPhotos() {
+  try {
+    const j = await getJSON(PHOTO_FEED);
+    const pages = Object.values((j.query && j.query.pages) || {});
+    const picks = [];
+    for (const pg of pages) {
+      const ii = pg.imageinfo && pg.imageinfo[0];
+      if (!ii || !ii.thumburl || ii.mime !== 'image/jpeg') continue;
+      const ratio = ii.width / ii.height;
+      if (ii.width < 2400 || ratio < 1.35 || ratio > 2.0) continue;
+      const meta = ii.extmetadata || {};
+      picks.push({ src: ii.thumburl, by: plain(meta.Artist && meta.Artist.value).slice(0, 60), lic: plain(meta.LicenseShortName && meta.LicenseShortName.value) });
     }
-  }
-  if (o.snow) {
-    c.save(); path(); c.clip();
-    const s = c.createLinearGradient(0, top, 0, top + o.amp * o.snow);
-    s.addColorStop(0, 'rgba(255,255,255,.95)'); s.addColorStop(1, 'rgba(255,255,255,0)');
-    c.fillStyle = s; c.fillRect(0, top, W, o.amp * o.snow); c.restore();
-  }
-  return pts;
+    tvLog(`photos: ${pages.length} listed, ${picks.length} usable`);
+    for (let i = picks.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [picks[i], picks[k]] = [picks[k], picks[i]]; }
+    photos = picks;
+    if (photos.length && photoIndex < 0) nextPhoto();
+  } catch (e) { tvLog('photos failed: ' + e.message); }
 }
-function mist(c, y, h, col) {
-  const g = c.createLinearGradient(0, y, 0, y + h);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, col); g.addColorStop(1, 'rgba(0,0,0,0)');
-  c.fillStyle = g; c.fillRect(0, y, W, h);
-}
-function water(c, y0, cols, seed, light) {
-  const g = c.createLinearGradient(0, y0, 0, H);
-  g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]);
-  c.fillStyle = g; c.fillRect(0, y0, W, H - y0);
-  const r = rng(seed);
-  for (let i = 0; i < 520; i++) {
-    const t = Math.pow(r(), 1.5), y = y0 + 4 + t * (H - y0), w = 30 + t * 260 * r();
-    c.fillStyle = `rgba(255,255,255,${(0.03 + 0.07 * r()).toFixed(3)})`;
-    c.fillRect(r() * W - w / 2, y, w, 1.2 + t * 3);
-  }
-  if (light) {
-    for (let i = 0; i < 300; i++) {
-      const t = Math.pow(r(), 1.3), y = y0 + 2 + t * (H - y0), w = 16 + t * 190 * r();
-      const x = light.x + (r() - 0.5) * (50 + t * 620);
-      c.fillStyle = light.col.replace('A', ((0.75 - 0.55 * t) * (0.35 + r() * 0.65)).toFixed(2));
-      c.fillRect(x - w / 2, y, w, 1.5 + t * 3.5);
-    }
-  }
-}
-function clouds(c, seed, n, yMin, yMax, col) {
-  const r = rng(seed);
-  for (let i = 0; i < n; i++) {
-    const cx = r() * W, cy = yMin + r() * (yMax - yMin), puffs = 5 + Math.floor(r() * 5), size = 60 + r() * 90;
-    for (let k = 0; k < puffs; k++) {
-      const x = cx + (k - puffs / 2) * size * 0.75 + r() * 30, y = cy + (r() - 0.5) * size * 0.35, rad = size * (0.7 + r() * 0.6);
-      const g = c.createRadialGradient(x, y, 0, x, y, rad);
-      g.addColorStop(0, col); g.addColorStop(1, 'rgba(255,255,255,0)');
-      c.fillStyle = g; c.fillRect(x - rad, y - rad * 0.6, rad * 2, rad * 1.2);
-    }
-  }
-}
-function aurora(c, seed) {
-  const r = rng(seed), n = noise1(seed + 5);
-  c.save(); c.globalCompositeOperation = 'lighter';
-  for (let band = 0; band < 3; band++) {
-    const y0 = 150 + band * 90, hue = band === 1 ? '120,255,200' : '90,255,160';
-    for (let x = 0; x < W; x += 6) {
-      const v = fbm(n, x / 260 + band * 11, 3), top = y0 + (v - 0.5) * 260, h = 180 + v * 300;
-      const a = Math.max(0, v - 0.32) * 0.22;
-      const g = c.createLinearGradient(0, top, 0, top + h);
-      g.addColorStop(0, `rgba(${hue},0)`); g.addColorStop(0.35, `rgba(${hue},${a.toFixed(3)})`); g.addColorStop(1, `rgba(${hue},0)`);
-      c.fillStyle = g; c.fillRect(x, top, 6, h);
-    }
-  }
-  c.restore(); r();
-}
-
-const SCENES = [
-  { name: 'كثبان عند الغروب', hours: [15, 19], paint(c) {
-    sky(c, [[0, '#231a45'], [0.42, '#7d3a5e'], [0.78, '#ee8748'], [1, '#ffd590']], 700);
-    glow(c, 1290, 610, 520, 'rgba(255,214,150,.75)', [58, '#fff1cf']);
-    ridge(c, { seed: 11, base: 700, amp: 130, scale: 520, oct: 2, fill: ['#c96f45', '#8c4330'] });
-    ridge(c, { seed: 12, base: 790, amp: 150, scale: 430, oct: 2, fill: ['#a2502f', '#6b2d20'] });
-    ridge(c, { seed: 13, base: 900, amp: 170, scale: 380, oct: 2, fill: ['#74321f', '#421a12'] });
-    ridge(c, { seed: 14, base: 1030, amp: 170, scale: 330, oct: 2, fill: ['#4a1d12', '#200b07'] });
-  } },
-  { name: 'بحر عند الفجر', hours: [4, 8], paint(c) {
-    sky(c, [[0, '#132149'], [0.45, '#40598f'], [0.82, '#e3977a'], [1, '#ffdcae']], 620);
-    glow(c, 640, 612, 460, 'rgba(255,205,160,.8)', [50, '#fff0d8']);
-    clouds(c, 21, 5, 300, 520, 'rgba(255,190,170,.20)');
-    ridge(c, { seed: 22, base: 622, amp: 70, scale: 620, oct: 3, fill: ['#2a3a69', '#1c2a52'], to: 640 });
-    water(c, 620, ['#3b5f93', '#0b1730'], 23, { x: 640, col: 'rgba(255,214,170,A)' });
-  } },
-  { name: 'بحيرة جبلية في المساء', hours: [19, 22], paint(c) {
-    sky(c, [[0, '#0a1330'], [0.55, '#21407a'], [1, '#7896c8']], 580);
-    stars(c, 31, 170, 380);
-    glow(c, 1500, 190, 240, 'rgba(220,232,255,.35)', [34, '#eef3ff']);
-    const paintHills = () => {
-      ridge(c, { seed: 32, base: 580, amp: 330, scale: 430, oct: 5, ridged: true, snow: 0.34, fill: ['#4a639a', '#2c4273'], to: 600 });
-      ridge(c, { seed: 33, base: 590, amp: 210, scale: 330, oct: 4, ridged: true, fill: ['#2a3f70', '#18284f'], to: 600 });
-      ridge(c, { seed: 34, base: 596, amp: 100, scale: 260, oct: 3, trees: 26, fill: ['#12203f', '#0c1730'], to: 600 });
-    };
-    paintHills();
-    water(c, 594, ['#22386b', '#060b1c'], 35, { x: 1500, col: 'rgba(225,235,255,A)' });
-    /* Mirror the hills into the lake, only below the waterline. */
-    c.save(); c.beginPath(); c.rect(0, 594, W, H - 594); c.clip();
-    c.translate(0, 1190); c.scale(1, -1); c.globalAlpha = 0.34; paintHills(); c.restore();
-  } },
-  { name: 'غابة في ضباب الصباح', hours: [6, 10], paint(c) {
-    sky(c, [[0, '#1c302c'], [0.5, '#52796a'], [0.85, '#a9c4a2'], [1, '#e9e2b4']], 640);
-    glow(c, 1180, 470, 520, 'rgba(255,244,196,.5)', null);
-    ridge(c, { seed: 41, base: 610, amp: 190, scale: 520, oct: 3, trees: 22, fill: ['#7ea08e', '#8fb09c'], to: 700 });
-    mist(c, 520, 200, 'rgba(232,240,220,.30)');
-    ridge(c, { seed: 42, base: 720, amp: 200, scale: 430, oct: 3, trees: 34, fill: ['#557c6b', '#6c917e'], to: 820 });
-    mist(c, 640, 200, 'rgba(226,236,214,.26)');
-    ridge(c, { seed: 43, base: 850, amp: 210, scale: 380, oct: 3, trees: 50, fill: ['#33574a', '#44695a'], to: 950 });
-    mist(c, 790, 180, 'rgba(220,232,208,.20)');
-    ridge(c, { seed: 44, base: 1010, amp: 200, scale: 330, oct: 3, trees: 78, fill: ['#17332b', '#0b1c17'] });
-  } },
-  { name: 'قمم ثلجية وشفق', hours: [22, 28], paint(c) {
-    sky(c, [[0, '#040918'], [0.6, '#0e2040'], [1, '#1f4060']], 700);
-    stars(c, 51, 260, 560);
-    aurora(c, 52);
-    ridge(c, { seed: 53, base: 760, amp: 420, scale: 460, oct: 5, ridged: true, snow: 0.42, fill: ['#33486e', '#1b2a4a'] });
-    ridge(c, { seed: 54, base: 880, amp: 300, scale: 360, oct: 5, ridged: true, snow: 0.3, fill: ['#1f2f52', '#101b36'] });
-    ridge(c, { seed: 55, base: 1030, amp: 230, scale: 300, oct: 4, trees: 44, fill: ['#0a1326', '#04070f'] });
-  } },
-  { name: 'سهول خضراء في النهار', hours: [10, 15], paint(c) {
-    sky(c, [[0, '#215a9f'], [0.6, '#6da8de'], [1, '#cfe6f3']], 640);
-    clouds(c, 61, 6, 150, 470, 'rgba(255,255,255,.55)');
-    ridge(c, { seed: 62, base: 640, amp: 150, scale: 620, oct: 3, fill: ['#8fb3a8', '#7da68f'], to: 760 });
-    ridge(c, { seed: 63, base: 740, amp: 150, scale: 520, oct: 2, fill: ['#7db365', '#5c9950'] });
-    ridge(c, { seed: 64, base: 850, amp: 160, scale: 440, oct: 2, trees: 30, fill: ['#4f8f43', '#3c7a39'] });
-    ridge(c, { seed: 65, base: 1000, amp: 170, scale: 380, oct: 2, fill: ['#2f6a31', '#173f1e'] });
-  } },
-];
-let sceneIndex = 0, front = 'bgA';
-function sceneForNow() {
-  const h = cityParts(cityNow()).h;
-  const i = SCENES.findIndex(s => (h >= s.hours[0] && h < s.hours[1]) || (h + 24 >= s.hours[0] && h + 24 < s.hours[1]));
-  return i < 0 ? 0 : i;
-}
-function showScene(i, instant) {
-  sceneIndex = (i + SCENES.length) % SCENES.length;
-  const back = instant ? front : (front === 'bgA' ? 'bgB' : 'bgA');
-  const cv = $(back), c = cv.getContext('2d');
-  c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.clearRect(0, 0, W, H);
-  SCENES[sceneIndex].paint(c);
-  if (!instant) { $(front).classList.remove('on'); cv.classList.add('on'); front = back; }
-  $('sceneName').textContent = SCENES[sceneIndex].name;
+function nextPhoto(tries) {
+  if (!photos.length) return;
+  photoIndex = (photoIndex + 1) % photos.length;
+  const p = photos[photoIndex];
+  const back = frontPhoto === 'phA' ? 'phB' : 'phA', img = $(back);
+  img.onload = () => {
+    $(frontPhoto).classList.remove('on'); img.classList.add('on'); frontPhoto = back;
+    $('stage').classList.remove('plain');
+    $('credit').textContent = p.by ? `Photo: ${p.by}${p.lic ? ' · ' + p.lic : ''} · Wikimedia Commons` : 'Wikimedia Commons';
+  };
+  img.onerror = () => { tvLog('photo did not load: ' + p.src); if ((tries || 0) < 3) nextPhoto((tries || 0) + 1); };
+  img.src = p.src;
 }
 
 /* ================= fit the stage to the screen ================= */
+const W = 1920, H = 1080;
 function fit() {
   const short = innerHeight < 430;
   document.documentElement.classList.toggle('short', short);
@@ -717,22 +600,22 @@ function fit() {
 renderApps();
 renderClock();
 renderPrayers();
-showScene(sceneForNow(), true);
 fit();
 addEventListener('resize', fit);
 loadWeather();
 loadMatches();
+loadPhotos();
 setInterval(renderClock, 1000);
 setInterval(renderPrayers, 10e3);
 setInterval(loadWeather, 30 * 60e3);
 setInterval(loadMatches, 15 * 60e3);
-setInterval(() => showScene(sceneIndex + 1), SCENE_MINUTES * 60e3);
-$('nextScene').addEventListener('click', () => showScene(sceneIndex + 1));
+setInterval(nextPhoto, PHOTO_MINUTES * 60e3);
+setInterval(loadPhotos, 12 * 3600e3);
 /* Called by the TV app each time the home screen comes back to the front. */
 let lastRefresh = Date.now();
 window.__tvResume = () => {
   fit(); renderClock(); renderPrayers();
-  if (Date.now() - lastRefresh > 5 * 60e3) { lastRefresh = Date.now(); loadWeather(); loadMatches(); }
+  if (Date.now() - lastRefresh > 5 * 60e3) { lastRefresh = Date.now(); loadWeather(); loadMatches(); if (!photos.length) loadPhotos(); }
 };
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 </script>

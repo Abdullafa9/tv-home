@@ -1,11 +1,19 @@
 package app.tvhome.launcher;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.tv.TvContract;
+import android.media.tv.TvInputInfo;
+import android.media.tv.TvInputManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.webkit.JavascriptInterface;
@@ -23,6 +31,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Full-screen home screen. Shows the page in assets/index.html, opens TV apps for it, and picks up
@@ -31,7 +41,7 @@ import java.net.URL;
 public class MainActivity extends Activity {
     private static final String TAG = "TVHome";
     /** The only hosts the page may read through the bridge. */
-    private static final String[] ALLOWED_HOSTS = {"api.open-meteo.com", "site.api.espn.com"};
+    private static final String[] ALLOWED_HOSTS = {"api.open-meteo.com", "site.api.espn.com", "commons.wikimedia.org"};
     /** Opened by the "all apps" tile. */
     private static final String APPS_SCREEN = "com.spocky.projengmenu";
     /** Where the newest version of the page lives. */
@@ -39,7 +49,8 @@ public class MainActivity extends Activity {
             "https://raw.githubusercontent.com/Abdullafa9/tv-home/main/app/assets/index.html";
     private static final long PAGE_CHECK_EVERY_MS = 10 * 60 * 1000;
     private static final String USER_AGENT =
-            "Mozilla/5.0 (Linux; Android 14; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+            "Mozilla/5.0 (Linux; Android 14; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+                    + " TVHome/1 (+https://github.com/Abdullafa9/tv-home)";
 
     private WebView web;
     private volatile String currentHtml;
@@ -66,6 +77,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        HomeKeyService.allowStockHome(false);
         web.onResume();
         web.requestFocus();
         web.evaluateJavascript("window.__tvResume && window.__tvResume()", null);
@@ -207,10 +219,87 @@ public class MainActivity extends Activity {
 
     // ---------------------------------------------------------------- what the page can ask for
 
-    private void openApp(String pkg) {
+    /** The "all apps" tile opens the Google TV launcher, which lists every app. */
+    private boolean openStockHome() {
+        try {
+            HomeKeyService.allowStockHome(true);
+            Intent i = new Intent(Intent.ACTION_MAIN);
+            i.addCategory(Intent.CATEGORY_HOME);
+            i.setPackage(HomeKeyService.STOCK_HOME);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            return true;
+        } catch (Exception e) {
+            HomeKeyService.allowStockHome(false);
+            Log.w(TAG, "could not open the Google launcher", e);
+            return false;
+        }
+    }
+
+    /** The app's own TV banner (or its icon) as a PNG data URL, so tiles show the real artwork. */
+    private String artwork(String pkg) {
         try {
             PackageManager pm = getPackageManager();
+            Drawable d = null;
+            Intent launch = pm.getLeanbackLaunchIntentForPackage(pkg);
+            if (launch != null && launch.getComponent() != null) d = pm.getActivityBanner(launch.getComponent());
+            if (d == null) d = pm.getApplicationBanner(pkg);
+            boolean banner = d != null;
+            if (d == null) d = pm.getApplicationIcon(pkg);
+            if (d == null) return "";
+            int w = banner ? 480 : 192, h = banner ? 270 : 192;
+            Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            d.setBounds(0, 0, w, h);
+            d.draw(new Canvas(bmp));
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
+            bmp.recycle();
+            return (banner ? "banner|" : "icon|") + "data:image/png;base64,"
+                    + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
+        } catch (Exception e) {
+            Log.w(TAG, "no artwork for " + pkg + ": " + e);
+            return "";
+        }
+    }
+
+    /** Switches the TV to one of its HDMI ports (1, 2, 3 ...). */
+    private void openInput(int number) {
+        try {
+            TvInputManager tm = (TvInputManager) getSystemService(Context.TV_INPUT_SERVICE);
+            List<TvInputInfo> ports = new ArrayList<TvInputInfo>();
+            TvInputInfo match = null;
+            for (TvInputInfo info : tm.getTvInputList()) {
+                CharSequence label = info.loadLabel(this);
+                Log.i(TAG, "input id=" + info.getId() + " label=" + label + " type=" + info.getType()
+                        + " parent=" + info.getParentId());
+                if (info.getType() != TvInputInfo.TYPE_HDMI || info.getParentId() != null) continue;
+                ports.add(info);
+                String text = (label + " " + info.getId()).toUpperCase();
+                if (match == null && text.matches(".*HDMI[ _-]?" + number + "(\\D.*)?")) match = info;
+            }
+            if (match == null && number >= 1 && number <= ports.size()) match = ports.get(number - 1);
+            if (match == null) {
+                Log.w(TAG, "HDMI " + number + " not found among " + ports.size() + " ports");
+                return;
+            }
+            Log.i(TAG, "opening HDMI " + number + " -> " + match.getId());
+            Intent i = new Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(match.getId()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+        } catch (Exception e) {
+            Log.e(TAG, "could not switch to HDMI " + number, e);
+        }
+    }
+
+    private void openApp(String pkg) {
+        try {
+            if (pkg != null && pkg.startsWith("hdmi:")) {
+                openInput(Integer.parseInt(pkg.substring(5)));
+                return;
+            }
+            PackageManager pm = getPackageManager();
             boolean all = "all".equals(pkg);
+            if (all && openStockHome()) return;
             String target = all ? APPS_SCREEN : pkg;
             Intent i = pm.getLeanbackLaunchIntentForPackage(target);
             if (i == null) i = pm.getLaunchIntentForPackage(target);
@@ -301,6 +390,11 @@ public class MainActivity extends Activity {
                     fetch(id, url);
                 }
             }).start();
+        }
+
+        @JavascriptInterface
+        public String artwork(String pkg) {
+            return MainActivity.this.artwork(pkg);
         }
 
         @JavascriptInterface
