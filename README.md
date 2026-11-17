@@ -11,3 +11,10 @@ weather, upcoming matches and app shortcuts, over slowly changing scenery.
 
 `app/debug.keystore` is a throwaway key for sideloading on one's own TV. It is not a secret and
 must not be used to publish the app anywhere.
+
+## Changing the design
+
+Edit `app/assets/index.html` and push to `main`. The app on the TV checks this file in the
+repository (at most every ten minutes, when the home screen comes to the front) and reloads itself
+when it has changed, so design changes do not need a reinstall. Changes to the Android wrapper do:
+install the new `tv-home.apk` from the latest release.

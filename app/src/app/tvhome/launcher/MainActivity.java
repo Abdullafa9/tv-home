@@ -16,19 +16,34 @@ import android.webkit.WebViewClient;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-/** Full-screen home screen: shows assets/index.html and opens TV apps for it. */
+/**
+ * Full-screen home screen. Shows the page in assets/index.html, opens TV apps for it, and picks up
+ * newer versions of that page from this project's repository so design changes need no reinstall.
+ */
 public class MainActivity extends Activity {
     private static final String TAG = "TVHome";
     /** The only hosts the page may read through the bridge. */
     private static final String[] ALLOWED_HOSTS = {"api.open-meteo.com", "site.api.espn.com"};
     /** Opened by the "all apps" tile. */
     private static final String APPS_SCREEN = "com.spocky.projengmenu";
+    /** Where the newest version of the page lives. */
+    private static final String PAGE_URL =
+            "https://raw.githubusercontent.com/Abdullafa9/tv-home/main/app/assets/index.html";
+    private static final long PAGE_CHECK_EVERY_MS = 10 * 60 * 1000;
+    private static final String USER_AGENT =
+            "Mozilla/5.0 (Linux; Android 14; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 
     private WebView web;
+    private volatile String currentHtml;
+    private long lastPageCheck;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +59,7 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient());
         web.addJavascriptInterface(new Bridge(), "TVBridge");
         setContentView(web);
-        web.loadUrl("file:///android_asset/index.html");
+        showPage();
         web.requestFocus();
     }
 
@@ -54,6 +69,7 @@ public class MainActivity extends Activity {
         web.onResume();
         web.requestFocus();
         web.evaluateJavascript("window.__tvResume && window.__tvResume()", null);
+        checkForNewPage();
     }
 
     @Override
@@ -66,6 +82,130 @@ public class MainActivity extends Activity {
     @Override
     public void onBackPressed() {
     }
+
+    // ---------------------------------------------------------------- the page
+
+    /** One cached copy per installed version, so a fresh install always starts from its own page. */
+    private File cacheFile() {
+        int code = 0;
+        try {
+            code = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+        } catch (Exception e) {
+            Log.w(TAG, "no version code", e);
+        }
+        return new File(getFilesDir(), "index-" + code + ".html");
+    }
+
+    private static String readAll(InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buf = new byte[16384];
+        int n;
+        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+        return out.toString("UTF-8");
+    }
+
+    private String readCached() {
+        File f = cacheFile();
+        if (!f.exists()) return null;
+        try {
+            InputStream in = new FileInputStream(f);
+            try {
+                return readAll(in);
+            } finally {
+                in.close();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String readBundled() {
+        try {
+            InputStream in = getAssets().open("index.html");
+            try {
+                return readAll(in);
+            } finally {
+                in.close();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "bundled page missing", e);
+            return null;
+        }
+    }
+
+    /** Guards against saving a cut-off download or something that is not this page. */
+    private static boolean looksComplete(String html) {
+        return html != null && html.length() > 5000 && html.contains("__tvResume")
+                && html.trim().endsWith("</html>");
+    }
+
+    private void showPage() {
+        String html = readCached();
+        if (!looksComplete(html)) html = readBundled();
+        currentHtml = html;
+        if (html != null) {
+            web.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+        } else {
+            web.loadUrl("file:///android_asset/index.html");
+        }
+    }
+
+    private void checkForNewPage() {
+        long now = System.currentTimeMillis();
+        if (now - lastPageCheck < PAGE_CHECK_EVERY_MS) return;
+        lastPageCheck = now;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection c = null;
+                try {
+                    c = (HttpURLConnection) new URL(PAGE_URL).openConnection();
+                    c.setConnectTimeout(10000);
+                    c.setReadTimeout(20000);
+                    c.setUseCaches(false);
+                    int code = c.getResponseCode();
+                    if (code != 200) {
+                        Log.i(TAG, "page check HTTP " + code);
+                        return;
+                    }
+                    final String fresh;
+                    InputStream in = c.getInputStream();
+                    try {
+                        fresh = readAll(in);
+                    } finally {
+                        in.close();
+                    }
+                    if (!looksComplete(fresh)) {
+                        Log.w(TAG, "page check: download incomplete, ignored");
+                        return;
+                    }
+                    if (fresh.equals(currentHtml)) {
+                        Log.i(TAG, "page check: no change");
+                        return;
+                    }
+                    FileOutputStream out = new FileOutputStream(cacheFile());
+                    try {
+                        out.write(fresh.getBytes("UTF-8"));
+                    } finally {
+                        out.close();
+                    }
+                    Log.i(TAG, "page check: new version saved, reloading");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            showPage();
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.w(TAG, "page check failed", e);
+                } finally {
+                    if (c != null) c.disconnect();
+                }
+            }
+        }).start();
+    }
+
+    // ---------------------------------------------------------------- what the page can ask for
 
     private void openApp(String pkg) {
         try {
@@ -107,18 +247,26 @@ public class MainActivity extends Activity {
             c.setConnectTimeout(10000);
             c.setReadTimeout(20000);
             c.setRequestProperty("Accept", "application/json");
+            c.setRequestProperty("User-Agent", USER_AGENT);
             int code = c.getResponseCode();
             InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            String text = "";
             if (in != null) {
-                byte[] buf = new byte[16384];
-                int n;
-                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
-                in.close();
+                try {
+                    text = readAll(in);
+                } finally {
+                    in.close();
+                }
             }
             ok = code >= 200 && code < 300;
-            body = ok ? out.toString("UTF-8") : "HTTP " + code;
-            Log.i(TAG, "fetch " + code + " " + out.size() + "b " + address);
+            if (ok) {
+                body = text;
+                Log.i(TAG, "fetch " + code + " " + text.length() + " chars " + address);
+            } else {
+                String snippet = text.length() > 200 ? text.substring(0, 200) : text;
+                body = "HTTP " + code + " " + snippet;
+                Log.w(TAG, "fetch " + code + " " + address + " -> " + snippet);
+            }
         } catch (Exception e) {
             body = String.valueOf(e);
             Log.w(TAG, "fetch failed: " + address, e);
@@ -134,7 +282,6 @@ public class MainActivity extends Activity {
         });
     }
 
-    /** What the page can ask the TV to do. */
     private class Bridge {
         @JavascriptInterface
         public void launch(final String pkg) {

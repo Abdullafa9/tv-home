@@ -436,8 +436,15 @@ async function fetchLive() {
   const all = [];
   const results = await Promise.allSettled(FOLLOW.map(async ([path, comp, re, days]) => {
     const to = new Date(Date.now() + days * 86400e3);
-    const j = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${ymd(from)}-${ymd(to)}&limit=200`);
-    tvLog(`scores ${path}: ${(j.events || []).length} events`);
+    const base = `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`;
+    const range = `dates=${ymd(from)}-${ymd(to)}`;
+    /* The feed is undocumented: try the widest request first, then simpler ones. */
+    let j = null, lastError = null;
+    for (const query of [`?${range}&limit=200`, `?${range}`, `?dates=${ymd(new Date())}`, '']) {
+      try { j = await getJSON(base + query); tvLog(`scores ${path} ok with "${query}": ${(j.events || []).length} events`); break; }
+      catch (e) { lastError = e; tvLog(`scores ${path} "${query}" failed: ${e.message}`); }
+    }
+    if (!j) throw lastError;
     for (const ev of (j.events || [])) {
       const c = ev.competitions && ev.competitions[0];
       if (!c || !c.competitors) continue;
