@@ -67,37 +67,48 @@ html.tv .frame { border-radius: 0; }
 .stage.plain .shade { background: linear-gradient(to top, rgba(4, 6, 12, .45) 0, rgba(4, 6, 12, 0) 34%); }
 
 /* ---------- right column: date, clock, prayers ---------- */
-.now { position: absolute; top: 88px; right: 112px; width: 560px; }
+.now { position: absolute; top: 60px; right: 112px; width: 620px; }
 .date { font-size: 34px; font-weight: 300; color: var(--ink-2); }
 .clock { display: flex; align-items: baseline; gap: 20px; direction: ltr; justify-content: flex-end; margin-top: 2px; }
 .clock .time { font-weight: 200; font-size: 236px; line-height: 1.08; font-variant-numeric: tabular-nums; letter-spacing: -3px; }
 .clock .ampm { font-weight: 300; font-size: 54px; color: var(--ink-2); }
-.next { font-size: 30px; font-weight: 400; margin-top: 10px; }
+/* ---------- glass cards: a softened copy of the background sits inside each card ---------- */
+.glass {
+  position: absolute; left: var(--x); top: var(--y); border-radius: 40px; overflow: hidden; text-shadow: none;
+  background: rgba(20, 22, 30, .34); box-shadow: 0 26px 60px rgba(0, 0, 0, .26);
+  --ink-2: rgba(255, 255, 255, .76); --ink-3: rgba(255, 255, 255, .52); --hairline: rgba(255, 255, 255, .20);
+}
+.glass .back { position: absolute; left: calc(-1 * var(--x)); top: calc(-1 * var(--y)); width: 1920px; height: 1080px; animation: drift 70s ease-in-out infinite alternate; will-change: transform; }
+.glass .back canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 3.2s ease; }
+.glass .back canvas.on { opacity: 1; }
+.glass::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(165deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .02) 45%, rgba(8, 10, 18, .10)), rgba(14, 16, 24, .40); }
+.glass::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18), inset 0 1.5px 0 rgba(255, 255, 255, .42); }
+.glass .inside { position: relative; z-index: 2; padding: 28px 36px 30px; }
+
+.next { font-size: 30px; font-weight: 500; }
 .next span { color: var(--ink-2); font-weight: 300; }
-.prayers { margin-top: 26px; width: 300px; border-top: 1px solid var(--hairline); padding-top: 16px; display: grid; gap: 9px; }
-.prayer { display: flex; justify-content: space-between; align-items: baseline; font-size: 25px; font-weight: 300; color: var(--ink-2); }
+.prayers { margin-top: 16px; border-top: 1px solid var(--hairline); padding-top: 16px; display: grid; gap: 9px; }
+.prayer { display: flex; justify-content: space-between; align-items: baseline; font-size: 26px; font-weight: 400; color: var(--ink-2); }
 .prayer .at { font-variant-numeric: tabular-nums; }
 .prayer.past { color: var(--ink-3); }
 .prayer.upnext { color: var(--ink); font-weight: 500; }
 
 /* ---------- left column: weather, matches ---------- */
-.side { position: absolute; top: 100px; left: 112px; width: 600px; }
-.weather { display: flex; align-items: center; gap: 22px; }
+.weather { position: absolute; top: 92px; left: 112px; display: flex; align-items: center; gap: 22px; }
 .weather svg { width: 64px; height: 64px; flex: none; }
 .weather .temp { font-weight: 200; font-size: 76px; line-height: 1; }
 .weather .cond { font-size: 28px; font-weight: 400; }
 .weather .sub { font-size: 22px; font-weight: 300; color: var(--ink-2); margin-top: 2px; }
 .label { font-size: 21px; font-weight: 400; color: var(--ink-3); display: flex; gap: 14px; align-items: center; }
-.matches { margin-top: 64px; }
 .match { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 15px 0; border-top: 1px solid var(--hairline); }
 .match:first-of-type { margin-top: 14px; }
 .match .teams { font-size: 27px; font-weight: 400; line-height: 1.35; }
 .match .teams .mine { font-weight: 500; }
-.match .teams .other { color: var(--ink-2); font-weight: 300; }
-.match .comp { font-size: 20px; font-weight: 300; color: var(--ink-3); margin-top: 1px; }
+.match .teams .other { color: var(--ink-2); font-weight: 400; }
+.match .comp { font-size: 20px; font-weight: 400; color: var(--ink-3); margin-top: 1px; }
 .match .when { text-align: left; flex: none; font-variant-numeric: tabular-nums; }
-.match .when .d { font-size: 20px; font-weight: 300; color: var(--ink-3); }
-.match .when .t { font-size: 25px; font-weight: 300; color: var(--ink-2); }
+.match .when .d { font-size: 20px; font-weight: 400; color: var(--ink-2); }
+.match .when .t { font-size: 25px; font-weight: 400; color: var(--ink); }
 .match .when .live { color: var(--live); font-size: 22px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .match .when .live::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--live); }
 .empty { font-size: 24px; font-weight: 300; color: var(--ink-2); padding: 18px 0; border-top: 1px solid var(--hairline); margin-top: 14px; }
@@ -129,8 +140,8 @@ html.tv .frame { border-radius: 0; }
 html.tv .helper, html.short .helper { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .photos, .fields i { animation: none; }
-  .photos img { transition: none; }
+  .photos, .fields i, .glass .back { animation: none; }
+  .photos img, .glass .back canvas { transition: none; }
 }
 </style>
 </head>
@@ -148,17 +159,25 @@ html.tv .helper, html.short .helper { display: none; }
         <span class="ampm" id="ampm"></span>
         <span class="time"><span id="hh"></span>:<span id="mm"></span></span>
       </div>
-      <div class="next" id="nextText"></div>
-      <div class="prayers" id="prayers" aria-label="أوقات الصلاة في الرياض"></div>
     </div>
 
-    <div class="side">
-      <div class="weather" id="weather"></div>
-      <section class="matches" aria-label="مباريات فرقي">
+    <section class="glass" style="--x: 1408px; --y: 404px; width: 400px;" aria-label="أوقات الصلاة في الرياض">
+      <div class="back" aria-hidden="true"><canvas width="192" height="108"></canvas><canvas width="192" height="108"></canvas></div>
+      <div class="inside">
+        <div class="next" id="nextText"></div>
+        <div class="prayers" id="prayers"></div>
+      </div>
+    </section>
+
+    <div class="weather" id="weather"></div>
+
+    <section class="glass" style="--x: 96px; --y: 222px; width: 660px;" aria-label="مباريات فرقي">
+      <div class="back" aria-hidden="true"><canvas width="192" height="108"></canvas><canvas width="192" height="108"></canvas></div>
+      <div class="inside">
         <div class="label">مباريات فرقي <span class="note" id="matchTag" hidden></span></div>
         <div id="matchList"></div>
-      </section>
-    </div>
+      </div>
+    </section>
 
     <nav class="apps" id="apps" aria-label="التطبيقات"></nav>
     <div class="credit" id="credit"></div>
@@ -188,11 +207,11 @@ const APPS = [
   ['إن بي إيه', 'com.nbaimd.gametime.nba2011'],
   ['كل التطبيقات', 'all', 'grid'],
 ];
-/* Teams followed: [league path on the scores feed, competition name, team-name test, days ahead to read] */
+/* Teams followed: [league path on the scores feed, competition name, team-name test] */
 const FOLLOW = [
-  ['soccer/ksa.1', 'دوري روشن', /nassr/i, 14],
-  ['soccer/esp.1', 'الدوري الإسباني', /^(fc )?barcelona$/i, 14],
-  ['basketball/nba', 'دوري السلة الأمريكي', /76ers/i, 7],
+  ['soccer/ksa.1', 'دوري روشن', /nassr/i],
+  ['soccer/esp.1', 'الدوري الإسباني', /^(fc )?barcelona$/i],
+  ['basketball/nba', 'دوري السلة الأمريكي', /76ers/i],
 ];
 /* Fixtures saved on 18 Nov 2026, used when the live feed gives nothing. */
 const SAVED_MATCHES = [
@@ -431,39 +450,31 @@ function readEvents(j, comp, re, into) {
     into.push({ date: ev.date || c.date, home: hn, away: an, comp, state: st.state, hs: sc(home.score), as: sc(away.score) });
   }
 }
+/* Each team's fixture list is read at most every six hours; today's scoreboard adds live scores. */
+const schedules = {};
 async function fetchLive() {
-  const from = new Date(Date.now() - 86400e3);
   const all = [];
-  const results = await Promise.allSettled(FOLLOW.map(async ([path, comp, re, days]) => {
-    const to = new Date(Date.now() + days * 86400e3);
+  const results = await Promise.allSettled(FOLLOW.map(async ([path, comp, re]) => {
     const base = `https://site.api.espn.com/apis/site/v2/sports/${path}`;
-    const range = `dates=${ymd(from)}-${ymd(to)}`;
     let got = 0, lastError = null;
-    /* The feed is undocumented: ask for the whole range, then simpler forms, and keep whatever answers. */
-    for (const query of [`/scoreboard?${range}&limit=200`, `/scoreboard?${range}`, '/scoreboard']) {
-      try {
-        const j = await getJSON(base + query);
-        const before = all.length;
-        readEvents(j, comp, re, all);
-        tvLog(`scores ${path}${query}: ${(j.events || []).length} events, ${all.length - before} mine`);
-        got++;
-        if (all.length > before) break;
-      } catch (e) { lastError = e; tvLog(`scores ${path}${query} failed: ${e.message}`); }
-    }
-    /* The team's own schedule, found through the league's team list. */
+    try { readEvents(await getJSON(base + '/scoreboard'), comp, re, all); got++; }
+    catch (e) { lastError = e; tvLog(`scoreboard ${path} failed: ${e.message}`); }
     try {
-      const teams = await getJSON(base + '/teams?limit=100');
-      const list = (((teams.sports || [])[0] || {}).leagues || [])[0];
-      const hit = ((list && list.teams) || []).map(t => t.team).find(t => t && re.test(t.displayName || t.name || ''));
-      if (hit) {
-        for (const extra of ['?fixture=true', '']) {
-          const j = await getJSON(`${base}/teams/${hit.id}/schedule${extra}`);
-          const before = all.length;
-          readEvents(j, comp, re, all);
-          tvLog(`schedule ${path} team ${hit.id}${extra}: ${(j.events || []).length} events, ${all.length - before} mine`);
-          got++;
+      let c = schedules[path] || {};
+      if (!c.events || Date.now() - c.at > 6 * 3600e3) {
+        if (!c.id) {
+          const teams = await getJSON(base + '/teams?limit=100');
+          const league = (((teams.sports || [])[0] || {}).leagues || [])[0];
+          const hit = ((league && league.teams) || []).map(t => t.team).find(t => t && re.test(t.displayName || t.name || ''));
+          if (!hit) throw new Error('team not found in the league list');
+          c.id = hit.id;
         }
-      } else tvLog(`schedule ${path}: team not found in list`);
+        const events = [];
+        readEvents(await getJSON(`${base}/teams/${c.id}/schedule?fixture=true`), comp, re, events);
+        c = schedules[path] = { id: c.id, at: Date.now(), events };
+        tvLog(`schedule ${path} team ${c.id}: ${events.length} fixtures`);
+      }
+      all.push(...c.events); got++;
     } catch (e) { lastError = e; tvLog(`schedule ${path} failed: ${e.message}`); }
     if (!got) throw lastError || new Error('no answer');
   }));
@@ -570,6 +581,21 @@ async function loadPhotos() {
     if (photos.length && photoIndex < 0) nextPhoto();
   } catch (e) { tvLog('photos failed: ' + e.message); }
 }
+/* Paints a small, softened copy of the photo; stretched over the stage it reads as frosted glass. */
+function paintGlass(img) {
+  document.querySelectorAll('.glass .back').forEach(back => {
+    const [a, b] = back.querySelectorAll('canvas');
+    const front = a.classList.contains('on') ? a : b, next = front === a ? b : a;
+    const c = next.getContext('2d'), cw = next.width, ch = next.height;
+    const ir = img.naturalWidth / img.naturalHeight, cr = cw / ch;
+    let sw = img.naturalWidth, sh = img.naturalHeight, sx = 0, sy = 0;
+    if (ir > cr) { sw = sh * cr; sx = (img.naturalWidth - sw) / 2; } else { sh = sw / cr; sy = (img.naturalHeight - sh) / 2; }
+    try { c.filter = 'blur(2px) saturate(1.35)'; } catch (e) {}
+    c.clearRect(0, 0, cw, ch);
+    c.drawImage(img, sx, sy, sw, sh, -4, -4, cw + 8, ch + 8);
+    front.classList.remove('on'); next.classList.add('on');
+  });
+}
 function nextPhoto(tries) {
   if (!photos.length) return;
   photoIndex = (photoIndex + 1) % photos.length;
@@ -577,6 +603,7 @@ function nextPhoto(tries) {
   const back = frontPhoto === 'phA' ? 'phB' : 'phA', img = $(back);
   img.onload = () => {
     $(frontPhoto).classList.remove('on'); img.classList.add('on'); frontPhoto = back;
+    try { paintGlass(img); } catch (e) { tvLog('glass: ' + e.message); }
     $('stage').classList.remove('plain');
     $('credit').textContent = p.by ? `Photo: ${p.by}${p.lic ? ' · ' + p.lic : ''} · Wikimedia Commons` : 'Wikimedia Commons';
   };
