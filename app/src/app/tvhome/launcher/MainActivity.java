@@ -3,7 +3,9 @@ package app.tvhome.launcher;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -45,7 +47,8 @@ import java.util.List;
 public class MainActivity extends Activity {
     private static final String TAG = "TVHome";
     /** The only hosts the page may read through the bridge. */
-    private static final String[] ALLOWED_HOSTS = {"api.open-meteo.com", "site.api.espn.com", "commons.wikimedia.org"};
+    private static final String[] ALLOWED_HOSTS = {
+            "api.open-meteo.com", "site.api.espn.com", "commons.wikimedia.org", "api.jolpi.ca"};
     /** Opened by the "all apps" tile. */
     private static final String APPS_SCREEN = "com.spocky.projengmenu";
     /** Where the newest version of the page lives. */
@@ -106,9 +109,10 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
-    /** This is the home screen: Back has nowhere to go. */
+    /** This is the home screen, so Back never leaves it; the page uses it to close its own panels. */
     @Override
     public void onBackPressed() {
+        web.evaluateJavascript("window.__tvBack && window.__tvBack()", null);
     }
 
     // ---------------------------------------------------------------- the page
@@ -276,6 +280,33 @@ public class MainActivity extends Activity {
             Log.w(TAG, "no artwork for " + pkg + ": " + e);
             return "";
         }
+    }
+
+    /** Every app on the TV that has a TV launcher entry, as JSON for the page's settings. */
+    private String installedApps() {
+        JSONArray out = new JSONArray();
+        try {
+            PackageManager pm = getPackageManager();
+            Intent query = new Intent(Intent.ACTION_MAIN);
+            query.addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
+            List<String> seen = new ArrayList<String>();
+            for (ResolveInfo info : pm.queryIntentActivities(query, 0)) {
+                String pkg = info.activityInfo.packageName;
+                if (seen.contains(pkg) || pkg.equals(getPackageName())) continue;
+                seen.add(pkg);
+                JSONObject o = new JSONObject();
+                o.put("pkg", pkg);
+                o.put("label", String.valueOf(info.loadLabel(pm)));
+                out.put(o);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "could not list apps", e);
+        }
+        return out.toString();
+    }
+
+    private SharedPreferences prefs() {
+        return getSharedPreferences("page", MODE_PRIVATE);
     }
 
     private static String text(Cursor c, int column) {
@@ -518,6 +549,23 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String artwork(String pkg) {
             return MainActivity.this.artwork(pkg);
+        }
+
+        @JavascriptInterface
+        public String apps() {
+            return installedApps();
+        }
+
+        /** The page keeps its settings and last good data here so they survive restarts. */
+        @JavascriptInterface
+        public String prefsGet(String key) {
+            String v = prefs().getString(key, "");
+            return v == null ? "" : v;
+        }
+
+        @JavascriptInterface
+        public void prefsSet(String key, String value) {
+            prefs().edit().putString(key, value).apply();
         }
 
         @JavascriptInterface
