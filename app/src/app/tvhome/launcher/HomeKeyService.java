@@ -3,6 +3,8 @@ package app.tvhome.launcher;
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
@@ -19,6 +21,17 @@ public class HomeKeyService extends AccessibilityService {
     private static final long STOCK_VISIT_MAX_MS = 15 * 60 * 1000L;
 
     private static volatile long stockAllowedUntil;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    /** The Google launcher can finish coming forward after this screen was opened, so look again shortly after. */
+    private final Runnable recheck = new Runnable() {
+        @Override
+        public void run() {
+            if (!MainActivity.inFront && !stockAllowed()) {
+                Log.i(TAG, "home screen is not in front yet, opening it again");
+                openHome();
+            }
+        }
+    };
 
     static void allowStockHome(boolean allow) {
         stockAllowedUntil = allow ? System.currentTimeMillis() + STOCK_VISIT_MAX_MS : 0;
@@ -58,6 +71,10 @@ public class HomeKeyService extends AccessibilityService {
             if (!stockAllowed()) {
                 Log.i(TAG, "Google launcher came forward, opening this home screen");
                 openHome();
+                handler.removeCallbacks(recheck);
+                handler.postDelayed(recheck, 700);
+                handler.postDelayed(recheck, 1800);
+                handler.postDelayed(recheck, 3500);
             }
             return;
         }

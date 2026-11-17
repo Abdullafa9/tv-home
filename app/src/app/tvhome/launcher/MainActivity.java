@@ -63,6 +63,9 @@ public class MainActivity extends Activity {
             "poster_art_uri", "thumbnail_uri", "last_playback_position_millis", "duration_millis", "intent_uri",
             "watch_next_type", "last_engagement_time_utc_millis"};
 
+    /** True while this screen is the one being shown. */
+    static volatile boolean inFront;
+
     private WebView web;
     private volatile String currentHtml;
     private long lastPageCheck;
@@ -88,6 +91,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        inFront = true;
         HomeKeyService.allowStockHome(false);
         web.onResume();
         web.requestFocus();
@@ -97,6 +101,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        inFront = false;
         web.onPause();
         super.onPause();
     }
