@@ -4,13 +4,16 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.media.tv.TvContract;
-import android.media.tv.TvInputInfo;
-import android.media.tv.TvInputManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.media.tv.TvContract;
+import android.media.tv.TvInputInfo;
+import android.media.tv.TvInputManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Base64;
@@ -21,6 +24,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -51,6 +55,13 @@ public class MainActivity extends Activity {
     private static final String USER_AGENT =
             "Mozilla/5.0 (Linux; Android 14; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
                     + " TVHome/1 (+https://github.com/Abdullafa9/tv-home)";
+
+    /** The system list behind Google TV's "Continue watching" row. Reading it needs READ_TV_LISTINGS. */
+    private static final Uri WATCH_NEXT = Uri.parse("content://android.media.tv/watch_next_program");
+    private static final String[] WATCH_NEXT_COLUMNS = {
+            "_id", "package_name", "title", "episode_title", "season_display_number", "episode_display_number",
+            "poster_art_uri", "thumbnail_uri", "last_playback_position_millis", "duration_millis", "intent_uri",
+            "watch_next_type", "last_engagement_time_utc_millis"};
 
     private WebView web;
     private volatile String currentHtml;
@@ -262,6 +273,113 @@ public class MainActivity extends Activity {
         }
     }
 
+    private static String text(Cursor c, int column) {
+        String v = c.isNull(column) ? null : c.getString(column);
+        return v == null ? "" : v;
+    }
+
+    /** What other apps have shared as "continue watching", as JSON for the page. */
+    private String watchNext() {
+        JSONArray out = new JSONArray();
+        Cursor c = null;
+        try {
+            c = getContentResolver().query(WATCH_NEXT, WATCH_NEXT_COLUMNS, null, null, null);
+            if (c == null) return "[]";
+            PackageManager pm = getPackageManager();
+            while (c.moveToNext() && out.length() < 60) {
+                String pkg = text(c, 1);
+                String art = text(c, 6);
+                if (art.length() == 0) art = text(c, 7);
+                String app;
+                try {
+                    app = String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)));
+                } catch (Exception e) {
+                    app = "";
+                }
+                JSONObject o = new JSONObject();
+                o.put("id", c.getLong(0));
+                o.put("pkg", pkg);
+                o.put("app", app);
+                o.put("title", text(c, 2));
+                o.put("episode", text(c, 3));
+                o.put("season", text(c, 4));
+                o.put("ep", text(c, 5));
+                o.put("art", art);
+                o.put("pos", c.isNull(8) ? 0 : c.getLong(8));
+                o.put("dur", c.isNull(9) ? 0 : c.getLong(9));
+                o.put("type", c.isNull(11) ? -1 : c.getInt(11));
+                o.put("at", c.isNull(12) ? 0 : c.getLong(12));
+                out.put(o);
+            }
+            Log.i(TAG, "watch next: " + out.length() + " rows");
+        } catch (SecurityException e) {
+            Log.w(TAG, "watch next: permission not granted");
+            return "{\"error\":\"permission\"}";
+        } catch (Exception e) {
+            Log.w(TAG, "watch next failed", e);
+        } finally {
+            if (c != null) c.close();
+        }
+        return out.toString();
+    }
+
+    /** Opens one "continue watching" item in its own app, at the place the app recorded. */
+    private void openWatchNext(long id) {
+        Cursor c = null;
+        try {
+            c = getContentResolver().query(WATCH_NEXT, WATCH_NEXT_COLUMNS, null, null, null);
+            while (c != null && c.moveToNext()) {
+                if (c.getLong(0) != id) continue;
+                String pkg = text(c, 1);
+                String uri = text(c, 10);
+                Intent i = uri.length() > 0 ? Intent.parseUri(uri, Intent.URI_INTENT_SCHEME) : null;
+                if (i == null) i = getPackageManager().getLeanbackLaunchIntentForPackage(pkg);
+                if (i == null) return;
+                if (i.getPackage() == null && i.getComponent() == null) i.setPackage(pkg);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                Log.i(TAG, "resuming in " + pkg);
+                startActivity(i);
+                return;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "could not resume item " + id, e);
+        } finally {
+            if (c != null) c.close();
+        }
+    }
+
+    /** Artwork that lives on the TV (not on the web), shrunk and returned as a JPEG data URL. */
+    private String localImage(String address) {
+        InputStream in = null;
+        try {
+            Uri uri = Uri.parse(address);
+            String scheme = uri.getScheme();
+            if (!"content".equals(scheme) && !"android.resource".equals(scheme)) return "";
+            in = getContentResolver().openInputStream(uri);
+            if (in == null) return "";
+            Bitmap full = BitmapFactory.decodeStream(in);
+            if (full == null) return "";
+            int w = full.getWidth(), h = full.getHeight();
+            float scale = Math.min(1f, 480f / Math.max(1, w));
+            Bitmap small = scale < 1f
+                    ? Bitmap.createScaledBitmap(full, Math.round(w * scale), Math.round(h * scale), true) : full;
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            small.compress(Bitmap.CompressFormat.JPEG, 85, out);
+            return "data:image/jpeg;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
+        } catch (Exception e) {
+            Log.w(TAG, "no local image for " + address + ": " + e);
+            return "";
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    Log.w(TAG, "close failed", e);
+                }
+            }
+        }
+    }
+
     /** Switches the TV to one of its HDMI ports (1, 2, 3 ...). */
     private void openInput(int number) {
         try {
@@ -395,6 +513,30 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String artwork(String pkg) {
             return MainActivity.this.artwork(pkg);
+        }
+
+        @JavascriptInterface
+        public String watchNext() {
+            return MainActivity.this.watchNext();
+        }
+
+        @JavascriptInterface
+        public String image(String uri) {
+            return MainActivity.this.localImage(uri);
+        }
+
+        @JavascriptInterface
+        public void resume(final String id) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        openWatchNext(Long.parseLong(id));
+                    } catch (NumberFormatException e) {
+                        Log.w(TAG, "bad item id " + id);
+                    }
+                }
+            });
         }
 
         @JavascriptInterface

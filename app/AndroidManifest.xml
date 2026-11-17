@@ -3,6 +3,9 @@
     package="app.tvhome.launcher">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- To show what other apps shared as "continue watching". Granted once over ADB. -->
+    <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
+    <uses-permission android:name="com.android.providers.tv.permission.READ_EPG_DATA" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />

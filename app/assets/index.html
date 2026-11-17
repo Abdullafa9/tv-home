@@ -59,6 +59,7 @@ html.tv .frame { border-radius: 0; }
 .shade {
   position: absolute; inset: 0; pointer-events: none;
   background:
+    linear-gradient(to bottom, rgba(4, 6, 12, .46) 0, rgba(4, 6, 12, 0) 30%),
     linear-gradient(to left, rgba(4, 6, 12, .58) 0, rgba(4, 6, 12, 0) 42%),
     linear-gradient(to right, rgba(4, 6, 12, .50) 0, rgba(4, 6, 12, 0) 40%),
     linear-gradient(to top, rgba(4, 6, 12, .74) 0, rgba(4, 6, 12, 0) 34%),
@@ -94,9 +95,11 @@ html.tv .frame { border-radius: 0; }
 .prayer.upnext { color: var(--ink); font-weight: 500; }
 
 /* ---------- left column: weather, matches ---------- */
-.weather { position: absolute; top: 92px; left: 112px; display: flex; align-items: center; gap: 22px; }
-.weather svg { width: 64px; height: 64px; flex: none; }
-.weather .temp { font-weight: 200; font-size: 76px; line-height: 1; }
+.weather { display: flex; align-items: center; gap: 22px; }
+.glass.slim { border-radius: 34px; }
+.glass.slim .inside { padding: 18px 34px 20px; }
+.weather svg { width: 56px; height: 56px; flex: none; }
+.weather .temp { font-weight: 200; font-size: 64px; line-height: 1; }
 .weather .cond { font-size: 28px; font-weight: 400; }
 .weather .sub { font-size: 22px; font-weight: 300; color: var(--ink-2); margin-top: 2px; }
 .label { font-size: 21px; font-weight: 400; color: var(--ink-3); display: flex; gap: 14px; align-items: center; }
@@ -113,6 +116,22 @@ html.tv .frame { border-radius: 0; }
 .match .when .live::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--live); }
 .empty { font-size: 24px; font-weight: 300; color: var(--ink-2); padding: 18px 0; border-top: 1px solid var(--hairline); margin-top: 14px; }
 .note { font-size: 18px; font-weight: 300; color: var(--ink-3); }
+
+/* ---------- continue watching (only on the TV, only when apps have shared something) ---------- */
+.continue { position: absolute; left: 96px; top: 706px; width: 1260px; }
+.continue .label { color: var(--ink-2); margin-bottom: 10px; }
+.continue .row { display: flex; gap: 18px; }
+.cw {
+  width: 222px; flex: none; border: 0; padding: 0; background: none; color: var(--ink); font-family: var(--font); cursor: pointer; text-align: right;
+  transition: transform .2s ease;
+}
+.cw .art { position: relative; width: 222px; height: 125px; border-radius: 14px; overflow: hidden; background: var(--tile); transition: box-shadow .2s ease; }
+.cw .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cw .art .bar { position: absolute; left: 10px; right: 10px; bottom: 8px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .32); overflow: hidden; direction: ltr; }
+.cw .art .bar i { display: block; height: 100%; background: #fff; border-radius: 2px; }
+.cw .name { font-size: 19px; font-weight: 400; margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cw:focus-visible { outline: none; transform: scale(1.08); z-index: 2; }
+.cw:focus-visible .art { box-shadow: 0 0 0 3px rgba(255, 255, 255, .95), 0 18px 40px rgba(0, 0, 0, .55); }
 
 /* ---------- dock ---------- */
 .apps { position: absolute; bottom: 78px; left: 0; right: 0; display: flex; justify-content: center; gap: 18px; padding: 0 60px; }
@@ -169,14 +188,22 @@ html.tv .helper, html.short .helper { display: none; }
       </div>
     </section>
 
-    <div class="weather" id="weather"></div>
+    <div class="glass slim" style="--x: 96px; --y: 70px;">
+      <div class="back" aria-hidden="true"><canvas width="192" height="108"></canvas><canvas width="192" height="108"></canvas></div>
+      <div class="inside"><div class="weather" id="weather"></div></div>
+    </div>
 
-    <section class="glass" style="--x: 96px; --y: 222px; width: 660px;" aria-label="مباريات فرقي">
+    <section class="glass" style="--x: 96px; --y: 208px; width: 660px;" aria-label="مباريات فرقي">
       <div class="back" aria-hidden="true"><canvas width="192" height="108"></canvas><canvas width="192" height="108"></canvas></div>
       <div class="inside">
         <div class="label">مباريات فرقي <span class="note" id="matchTag" hidden></span></div>
         <div id="matchList"></div>
       </div>
+    </section>
+
+    <section class="continue" id="continue" aria-label="متابعة المشاهدة" hidden>
+      <div class="label">متابعة المشاهدة</div>
+      <div class="row" id="continueRow"></div>
     </section>
 
     <nav class="apps" id="apps" aria-label="التطبيقات"></nav>
@@ -490,7 +517,7 @@ function upcoming(list) {
     .sort((a, b) => a.t - b.t);
 }
 function renderMatches(list, saved) {
-  const rows = upcoming(list).slice(0, 4);
+  const rows = upcoming(list).slice(0, 3);
   const tag = $('matchTag');
   tag.hidden = !saved;
   tag.textContent = saved ? 'جدول محفوظ' : '';
@@ -548,16 +575,61 @@ function renderApps() {
     if (window.TVBridge && window.TVBridge.launch) window.TVBridge.launch(b.dataset.target);
     else toast('يفتح «' + b.getAttribute('aria-label') + '» عند تشغيل الشاشة على التلفزيون');
   });
-  /* Remote control: the row reads right to left, so the left arrow moves to the next tile. */
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    const tiles = [...nav.querySelectorAll('.app')];
-    const i = tiles.indexOf(document.activeElement);
-    const j = i < 0 ? 0 : Math.max(0, Math.min(tiles.length - 1, i + (e.key === 'ArrowLeft' ? 1 : -1)));
-    tiles[j].focus(); e.preventDefault();
-  });
   if (ON_TV) nav.querySelector('.app').focus();
 }
+
+/* ================= continue watching ================= */
+const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+let continueKey = '';
+function loadContinue() {
+  const box = $('continue');
+  if (!(window.TVBridge && window.TVBridge.watchNext)) { box.hidden = true; return; }
+  let rows = [];
+  try {
+    const j = JSON.parse(window.TVBridge.watchNext());
+    if (Array.isArray(j)) rows = j; else tvLog('continue watching: ' + (j && j.error));
+  } catch (e) { tvLog('continue watching failed: ' + e.message); }
+  /* 0 = part-way through, 1 = next episode. Newest first. */
+  rows = rows.filter(r => r.title && (r.type === 0 || r.type === 1)).sort((x, y) => y.at - x.at).slice(0, 5);
+  const key = rows.map(r => r.id + ':' + r.pos).join(',');
+  if (key === continueKey) return;
+  continueKey = key;
+  box.hidden = !rows.length;
+  $('continueRow').innerHTML = rows.map(r => {
+    let src = r.art || '';
+    if (src && !/^https?:/i.test(src)) { try { src = window.TVBridge.image(src) || ''; } catch (e) { src = ''; } }
+    const pct = r.dur > 0 ? Math.max(3, Math.min(100, Math.round(r.pos / r.dur * 100))) : 0;
+    const ep = r.season && r.ep ? ` · م${ar(r.season)} ح${ar(r.ep)}` : '';
+    return `<button type="button" class="cw" data-id="${esc(r.id)}" aria-label="${esc(r.title)}">` +
+      `<div class="art">${src ? `<img src="${esc(src)}" alt="">` : ''}${pct ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div>` +
+      `<div class="name" dir="auto">${esc(r.title)}${ep}</div></button>`;
+  }).join('');
+}
+$('continueRow').addEventListener('click', e => {
+  const b = e.target.closest('.cw');
+  if (b && window.TVBridge && window.TVBridge.resume) window.TVBridge.resume(b.dataset.id);
+});
+
+/* ================= remote control ================= */
+/* Rows read right to left, so the left arrow moves to the next item. Up and down change rows. */
+document.addEventListener('keydown', e => {
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+  const rows = [[...document.querySelectorAll('#continueRow .cw')], [...document.querySelectorAll('#apps .app')]].filter(r => r.length);
+  if (!rows.length) return;
+  let ri = rows.findIndex(r => r.includes(document.activeElement));
+  e.preventDefault();
+  if (ri < 0) { rows[rows.length - 1][0].focus(); return; }
+  const row = rows[ri], i = row.indexOf(document.activeElement);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    row[Math.max(0, Math.min(row.length - 1, i + (e.key === 'ArrowLeft' ? 1 : -1)))].focus();
+    return;
+  }
+  const target = rows[ri + (e.key === 'ArrowDown' ? 1 : -1)];
+  if (!target) return;
+  const mid = el => { const b = el.getBoundingClientRect(); return b.left + b.width / 2; };
+  const x = mid(document.activeElement);
+  target.reduce((best, el) => Math.abs(mid(el) - x) < Math.abs(mid(best) - x) ? el : best, target[0]).focus();
+});
 
 /* ================= photographs ================= */
 let photos = [], photoIndex = -1, frontPhoto = 'phA';
@@ -632,6 +704,8 @@ addEventListener('resize', fit);
 loadWeather();
 loadMatches();
 loadPhotos();
+loadContinue();
+setInterval(loadContinue, 5 * 60e3);
 setInterval(renderClock, 1000);
 setInterval(renderPrayers, 10e3);
 setInterval(loadWeather, 30 * 60e3);
@@ -641,7 +715,7 @@ setInterval(loadPhotos, 12 * 3600e3);
 /* Called by the TV app each time the home screen comes back to the front. */
 let lastRefresh = Date.now();
 window.__tvResume = () => {
-  fit(); renderClock(); renderPrayers();
+  fit(); renderClock(); renderPrayers(); loadContinue();
   if (Date.now() - lastRefresh > 5 * 60e3) { lastRefresh = Date.now(); loadWeather(); loadMatches(); if (!photos.length) loadPhotos(); }
 };
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
