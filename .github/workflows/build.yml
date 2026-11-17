@@ -1,0 +1,39 @@
+name: Build TV app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the APK
+        run: bash build.sh
+
+      - name: Publish it as the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ github.run_number }}" out/tv-home.apk \
+            --title "TV Home 1.${{ github.run_number }}" \
+            --notes "Automatic build of ${GITHUB_SHA::7}" --latest
+
+      # Keeps the last build log and result on the "builds" branch so they can be read with git.
+      - name: Save the build log
+        if: always()
+        run: |
+          mkdir -p /tmp/b
+          cp out/build.log /tmp/b/ 2>/dev/null || true
+          echo "${{ job.status }} run=${{ github.run_number }} sha=${{ github.sha }}" > /tmp/b/status.txt
+          cd /tmp/b
+          git init -q -b builds
+          git add -A
+          git -c user.name="build" -c user.email="build@users.noreply.github.com" commit -q -m "build ${{ github.run_number }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" builds
