@@ -359,6 +359,7 @@ const DEFAULTS = {
   bg: { mode: 'photos', minutes: 5, fixed: null },
   night: { on: true, from: 23, to: 6, level: 1 },
   idle: 5,                       /* minutes; 0 switches it off */
+  awake: true,                   /* keep the TV on while this screen is showing */
   last: '',                      /* the dock tile that was selected last */
 };
 function loadSettings() {
@@ -974,6 +975,7 @@ function applySettings() {
   root.setProperty('--fz', [1, 1.1, 1.2][S.font] || 1);
   for (const [name, id] of Object.entries(CARD_EL)) $(id).hidden = S.off.includes(name);
   S.stack.forEach((name, i) => { $(CARD_EL[name]).style.order = i; });
+  try { if (BR && BR.keepOn) BR.keepOn(!!S.awake); } catch (e) {}
   renderApps(); renderModes(); renderSports(); renderWeather(); loadContinue(); applyNight(); placeSoon();
 }
 
@@ -1161,6 +1163,7 @@ function renderPanel() {
     h.push(choice('nto', 'ينتهي', hours([4, 5, 6, 7, 8, 9]), () => S.night.to, v => { S.night.to = v; }));
     h.push(choice('nlevel', 'قوة التخفيف', [[0, 'خفيفة'], [1, 'متوسطة'], [2, 'قوية']], () => S.night.level, v => { S.night.level = v; }));
   }
+  h.push(toggle('awake', 'إبقاء الشاشة تعمل دائمًا', () => S.awake, v => { S.awake = v; }, 'يمنع انطفاء التلفزيون وشاشة التوقف ما دامت هذه الواجهة معروضة. داخل التطبيقات الأخرى يبقى سلوك التلفزيون كما هو.'));
   h.push(choice('idle', 'إخفاء البطاقات عند الخمول', [[0, 'متوقف'], [1, 'بعد دقيقة'], [3, 'بعد ٣ دقائق'], [5, 'بعد ٥ دقائق'], [10, 'بعد ١٠ دقائق'], [30, 'بعد ٣٠ دقيقة']], () => S.idle, v => { S.idle = v; },
     'تبقى الخلفية والساعة. أي ضغطة تعيد الواجهة دون أن تشغّل شيئًا.'));
 

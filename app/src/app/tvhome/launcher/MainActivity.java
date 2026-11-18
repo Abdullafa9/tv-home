@@ -551,6 +551,18 @@ public class MainActivity extends Activity {
             return MainActivity.this.artwork(pkg);
         }
 
+        /** Keeps the TV from sleeping or starting its screensaver while this screen is in front. */
+        @JavascriptInterface
+        public void keepOn(final boolean on) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    web.setKeepScreenOn(on);
+                    Log.i(TAG, "keep screen on: " + on);
+                }
+            });
+        }
+
         @JavascriptInterface
         public String apps() {
             return installedApps();
